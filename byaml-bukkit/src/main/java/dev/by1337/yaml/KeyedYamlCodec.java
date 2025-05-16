@@ -54,7 +54,7 @@ public class KeyedYamlCodec<T extends Keyed> implements YamlCodec<T> {
     }
 
     @Override
-    public @NotNull SchemaType getSchemaType() {
+    public @NotNull SchemaType schema() {
         return schemaType;
     }
 }

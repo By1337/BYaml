@@ -1,6 +1,5 @@
 package dev.by1337.yaml.codec;
 
-import com.google.common.base.Enums;
 import com.google.common.base.Joiner;
 import dev.by1337.yaml.YamlMap;
 import dev.by1337.yaml.YamlValue;
@@ -47,7 +46,7 @@ public interface YamlCodec<T> {
     YamlValue encode(T value);
 
     @NotNull
-    SchemaType getSchemaType();
+    SchemaType schema();
 
     default <R> YamlField<R, T> fieldOf(String name, Function<R, T> getter) {
         return new YamlField<>(this, name, getter);
@@ -67,7 +66,7 @@ public interface YamlCodec<T> {
 
     default YamlCodec<T> schema(Function<SchemaType, SchemaType> mutator){
         final YamlCodec<T> subCodec = this;
-        final SchemaType schemaType = mutator.apply(getSchemaType());
+        final SchemaType schemaType = mutator.apply(schema());
         return new YamlCodec<>() {
             @Override
             public T decode(YamlValue value) {
@@ -80,7 +79,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return schemaType;
             }
         };
@@ -100,7 +99,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return schemaType;
             }
         };
@@ -120,8 +119,8 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
-                return subCodec.getSchemaType();
+            public @NotNull SchemaType schema() {
+                return subCodec.schema();
             }
         };
     }
@@ -130,7 +129,7 @@ public interface YamlCodec<T> {
         final YamlCodec<T> subCodec = this;
         return new YamlCodec<>() {
             final YamlCodec<List<T>> listCodec = subCodec.listOf();
-            final SchemaType type = SchemaTypes.oneOf(subCodec.getSchemaType(), subCodec.getSchemaType().listOf());
+            final SchemaType type = SchemaTypes.oneOf(subCodec.schema(), subCodec.schema().listOf());
             @Override
             public List<T> decode(YamlValue value) {
                 if (value.isCollection()) return listCodec.decode(value);
@@ -146,7 +145,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return type;
             }
         };
@@ -155,7 +154,7 @@ public interface YamlCodec<T> {
     default YamlCodec<List<T>> listOf() {
         final YamlCodec<T> subCodec = this;
         return new YamlCodec<>() {
-            final SchemaType type = subCodec.getSchemaType().listOf();
+            final SchemaType type = subCodec.schema().listOf();
             @Override
             public List<T> decode(YamlValue value) {
                 return value.stream().map(subCodec::decode).collect(Collectors.toList());
@@ -167,7 +166,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return type;
             }
         };
@@ -175,7 +174,7 @@ public interface YamlCodec<T> {
 
     static <K, V> YamlCodec<Map<K, V>> mapOf(final YamlCodec<K> keyCodec, final YamlCodec<V> valueCodec) {
         return new YamlCodec<>() {
-            final SchemaType schemaType = SchemaTypes.OBJECT.asBuilder().patternProperties(".*", valueCodec.getSchemaType()).build();
+            final SchemaType schemaType = SchemaTypes.OBJECT.asBuilder().patternProperties(".*", valueCodec.schema()).build();
             @Override
             public Map<K, V> decode(YamlValue value) {
                 return value.streamMap().collect(Collectors.toMap(
@@ -198,7 +197,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return schemaType;
             }
         };
@@ -218,7 +217,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return type;
             }
         };
@@ -247,7 +246,7 @@ public interface YamlCodec<T> {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return schemaType;
             }
         };
@@ -279,7 +278,7 @@ public interface YamlCodec<T> {
         }
 
         @Override
-        public @NotNull SchemaType getSchemaType() {
+        public @NotNull SchemaType schema() {
             return schemaType;
         }
     }

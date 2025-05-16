@@ -25,7 +25,7 @@ public class BuilderYamlCodecBuilder {
             if (field.setter == null) {
                 throw new NullPointerException("Setter for field " + field.name + " is null");
             }
-            builder.properties(field.name, field.codec.getSchemaType());
+            builder.properties(field.name, field.codec.schema());
         }
         builder.additionalProperties(false);
         return new YamlCodec<T>() {
@@ -63,7 +63,7 @@ public class BuilderYamlCodecBuilder {
             }
 
             @Override
-            public @NotNull SchemaType getSchemaType() {
+            public @NotNull SchemaType schema() {
                 return schemaType;
             }
         };

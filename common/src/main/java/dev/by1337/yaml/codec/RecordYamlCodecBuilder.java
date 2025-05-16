@@ -882,7 +882,7 @@ public class RecordYamlCodecBuilder {
         }
 
         @Override
-        public @NotNull SchemaType getSchemaType() {
+        public @NotNull SchemaType schema() {
             if (schemaType != null) return schemaType;
             buildSchemaType();
             return schemaType;
@@ -893,7 +893,7 @@ public class RecordYamlCodecBuilder {
             JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
             builder.type(SchemaTypes.Type.OBJECT);
             for (YamlField field : getFields()) {
-                builder.properties(field.name, field.codec.getSchemaType());
+                builder.properties(field.name, field.codec.schema());
             }
             builder.additionalProperties(false);
             schemaType = builder.build();
