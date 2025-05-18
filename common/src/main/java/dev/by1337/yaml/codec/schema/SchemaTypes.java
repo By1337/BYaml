@@ -25,6 +25,10 @@ public class SchemaTypes {
         return builder().oneOf(schemas).build();
     }
 
+    public static SchemaType anyOf(final SchemaType... schemas) {
+        return builder().anyOf(schemas).build();
+    }
+
     public static SchemaType enumOf(Collection<String> elements) {
         return builder().enumOf(elements).build();
     }

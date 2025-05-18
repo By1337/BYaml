@@ -13,7 +13,7 @@ public class YamlMapTest {
 
 
     @Test
-    public void test23(){
+    public void test23() {
         Assertions.assertEquals(54, YamlValue.EMPTY.getAsInt(54));
     }
 
@@ -21,8 +21,11 @@ public class YamlMapTest {
     public void yamlMapGet() {
         {
             YamlMap yamlMap = new YamlMap();
-            yamlMap.set("subMap", new YamlMap());
-            yamlMap.get("subMap").decode(YamlCodec.YAML_MAP).set("test", "string");
+            var newMap = new YamlMap();
+            yamlMap.set("subMap", newMap);
+            var decoded = yamlMap.get("subMap").decode(YamlCodec.YAML_MAP);
+            Assertions.assertSame(newMap.getRaw(), decoded.getRaw());
+            decoded.set("test", "string");
             Assertions.assertEquals("string", yamlMap.get("subMap.test").decode(YamlCodec.STRING));
         }
         {
@@ -37,6 +40,10 @@ public class YamlMapTest {
 
 
             List<YamlMap> result = yamlMap.get("maps").decode(YamlCodec.YAML_MAP.listOf());
+
+            Assertions.assertSame(result.get(0).getRaw(), list.get(0).getRaw());
+            Assertions.assertSame(result.get(1).getRaw(), list.get(1).getRaw());
+            Assertions.assertSame(result.get(2).getRaw(), list.get(2).getRaw());
 
             result.get(0).set("test", "string");
             result.get(1).set("test", "string");

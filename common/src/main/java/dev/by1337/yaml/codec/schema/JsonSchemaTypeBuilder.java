@@ -112,6 +112,32 @@ public class JsonSchemaTypeBuilder {
     }
 
     @Contract("_ -> this")
+    public JsonSchemaTypeBuilder anyOf(SchemaType... types) {
+        JsonArray array = new JsonArray();
+        for (SchemaType type : types) {
+            array.add(type.getObject());
+        }
+        jsonObject.add("anyOf", array);
+        return this;
+    }
+
+    @Contract("_ -> this")
+    public JsonSchemaTypeBuilder addAnyOf(SchemaType... types) {
+        JsonArray array;
+        JsonElement element = jsonObject.get("anyOf");
+        if (element instanceof JsonArray arr) {
+            array = arr;
+        } else {
+            array = new JsonArray();
+            jsonObject.add("anyOf", array);
+        }
+        for (SchemaType type : types) {
+            array.add(type.getObject());
+        }
+        return this;
+    }
+
+    @Contract("_ -> this")
     public JsonSchemaTypeBuilder ref(String ref) {
         jsonObject.addProperty("$ref", ref);
         return this;

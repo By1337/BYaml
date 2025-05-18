@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class YamlValue {
@@ -21,7 +22,12 @@ public class YamlValue {
 
     public static YamlValue wrap(@Nullable final Object value) {
         if (value == null) return EMPTY;
-        if (value instanceof YamlValue yamlValue) return yamlValue;
+        if (value instanceof YamlMap map) return new YamlValue(map.getRaw());
+        return new YamlValue(unpack(value));
+    }
+
+    static YamlValue wrapUnsafe(@Nullable final Object value) {
+        if (value == null) return EMPTY;
         if (value instanceof YamlMap map) return new YamlValue(map.getRaw());
         return new YamlValue(value);
     }
@@ -43,7 +49,11 @@ public class YamlValue {
 
     @SuppressWarnings("unchecked")
     public YamlMap getAsYamlMap() {
-        return new YamlMap((LinkedHashMap<String, Object>) value);
+        reqMap();
+        if (value instanceof LinkedHashMap<?, ?>)
+            return new YamlMap((LinkedHashMap<String, Object>) value);
+        Map<String, Object> map = (Map<String, Object>) value;
+        return new YamlMap(new LinkedHashMap<>(map));
     }
 
     public @Nullable Object getValue() {
@@ -57,7 +67,7 @@ public class YamlValue {
 
     public Stream<YamlValue> stream() {
         reqCollection();
-        return ((Collection<?>) value).stream().map(YamlValue::wrap);
+        return ((Collection<?>) value).stream().map(YamlValue::wrapUnsafe);
     }
 
     public Stream<Map.Entry<YamlValue, YamlValue>> streamMap(Stream<Map.Entry<YamlValue, YamlValue>> def) {
@@ -68,7 +78,7 @@ public class YamlValue {
     @SuppressWarnings("unchecked")
     public Stream<Map.Entry<YamlValue, YamlValue>> streamMap() {
         reqMap();
-        return ((Map<Object, Object>) value).entrySet().stream().map(e -> new MapEntry<>(wrap(e.getKey()), wrap(e.getValue())));
+        return ((Map<Object, Object>) value).entrySet().stream().map(e -> new MapEntry<>(wrapUnsafe(e.getKey()), wrapUnsafe(e.getValue())));
     }
 
     public void reqCollection() {
@@ -105,7 +115,7 @@ public class YamlValue {
 
     public <T> List<T> getAsList(YamlCodec<T> codec) {
         reqCollection();
-        return ((Collection<?>) value).stream().map(v -> codec.decode(wrap(v))).toList();
+        return ((Collection<?>) value).stream().map(v -> codec.decode(wrapUnsafe(v))).toList();
     }
 
     public <T> List<T> getAsList(Function<YamlValue, T> mapper, List<T> def) {
@@ -280,6 +290,7 @@ public class YamlValue {
     @Contract("null -> null")
     public static Object unpack(@Nullable Object val) {
         Object o = val;
+        if (o instanceof YamlMap map) return map.getRaw();
         if (o instanceof YamlValue) {
             o = ((YamlValue) o).unpack();
         }
@@ -301,7 +312,7 @@ public class YamlValue {
     }
 
     public static Collection<?> unpackCollection(Collection<?> list) {
-        List<Object> result = new ArrayList<>();
+        List<Object> result = new ArrayList<>(list.size());
         for (Object o : list) {
             result.add(unpack(o));
         }

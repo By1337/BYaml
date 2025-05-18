@@ -49,4 +49,24 @@ public class YamlField<T, F> {
         this.defaultValue = defaultValue;
         return this;
     }
+
+    public YamlCodec<F> codec() {
+        return codec;
+    }
+
+    public Function<T, F> getter() {
+        return getter;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public F defaultValue() {
+        return defaultValue;
+    }
+
+    public BiConsumer<T, F> setter() {
+        return setter;
+    }
 }

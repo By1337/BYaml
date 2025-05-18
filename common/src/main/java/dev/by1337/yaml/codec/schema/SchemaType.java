@@ -27,12 +27,18 @@ public class SchemaType {
         return SchemaTypes.ARRAY.asBuilder().items(this).build();
     }
 
-    public JsonObject createJsonObject() {
-        return deepCopy(object);
+    public JsonObject buildJson() {
+        var json = deepCopy(object);
+        JsonDeduplicator deduplicator = new JsonDeduplicator();
+        deduplicator.deduplicate(json);
+        return json;
     }
 
     public SchemaType or(SchemaType... other){
-        return JsonSchemaTypeBuilder.create().oneOf(other).addOneOf(this).build();
+        return JsonSchemaTypeBuilder.create().anyOf(other).addAnyOf(this).build();
+    }
+    public SchemaType asMap(){
+        return SchemaTypes.OBJECT.asBuilder().patternProperties(".*", this).build();
     }
 
     @SuppressWarnings("unchecked")

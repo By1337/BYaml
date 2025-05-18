@@ -54,17 +54,17 @@ public class YamlMap {
     }
 
     public YamlValue get() {
-        return YamlValue.wrap(map);
+        return YamlValue.wrapUnsafe(this);
     }
 
     @NotNull
     public  YamlValue get(@NotNull String path, @Nullable Object def) {
-       return YamlValue.wrap(getRaw(path, def));
+       return YamlValue.wrapUnsafe(getRaw(path, def));
     }
 
     @NotNull
     public YamlValue get(@NotNull String path) {
-        return YamlValue.wrap(getRaw(path));
+        return YamlValue.wrapUnsafe(getRaw(path));
     }
 
     @Nullable
@@ -102,8 +102,8 @@ public class YamlMap {
     @SuppressWarnings("unchecked")
     private <T> Object serialize(@Nullable T obj) {
         if (obj == null) return null;
+        if (obj instanceof YamlMap) return ((YamlMap) obj).map;
         Object o = YamlValue.unpack(obj);
-        if (o instanceof YamlMap) return ((YamlMap) o).map;
 
         YamlCodec<T> codec = (YamlCodec<T>) CodecFinder.INSTANCE.getCodec(o.getClass());
         if (codec == null) return o;
@@ -168,6 +168,19 @@ public class YamlMap {
         return "YamlMap{" +
                 "map=" + map +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        YamlMap yamlMap = (YamlMap) o;
+        return Objects.equals(map, yamlMap.map);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(map);
     }
 
     @ApiStatus.Internal

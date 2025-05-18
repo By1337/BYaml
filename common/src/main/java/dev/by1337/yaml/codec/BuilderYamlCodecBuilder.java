@@ -39,7 +39,7 @@ public class BuilderYamlCodecBuilder {
                     var val = map.get(field.name);
                     if (!val.isNull()) {
                         field.setter.accept(v, field.codec.decode(val));
-                    } else {
+                    } else if (field.defaultValue != null){
                         field.setter.accept(v, field.defaultValue);
                     }
                 }
