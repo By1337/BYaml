@@ -58,20 +58,20 @@ import org.bukkit.util.Vector;
 public class BukkitYamlCodecs {
 
     public static final YamlCodec<Vector> VECTOR = RecordYamlCodecBuilder.mapOf(
+            Vector::new,
             YamlCodec.DOUBLE.fieldOf("x", Vector::getX),
             YamlCodec.DOUBLE.fieldOf("y", Vector::getY),
-            YamlCodec.DOUBLE.fieldOf("z", Vector::getZ),
-            Vector::new
+            YamlCodec.DOUBLE.fieldOf("z", Vector::getZ)
     );
 
     public static final YamlCodec<BoundingBox> BOUNDING_BOX = RecordYamlCodecBuilder.mapOf(
+            BoundingBox::new,
             YamlCodec.DOUBLE.fieldOf("minX", BoundingBox::getMinX),
             YamlCodec.DOUBLE.fieldOf("minY", BoundingBox::getMinY),
             YamlCodec.DOUBLE.fieldOf("minZ", BoundingBox::getMinZ),
             YamlCodec.DOUBLE.fieldOf("maxX", BoundingBox::getMaxX),
             YamlCodec.DOUBLE.fieldOf("maxY", BoundingBox::getMaxY),
-            YamlCodec.DOUBLE.fieldOf("maxZ", BoundingBox::getMaxZ),
-            BoundingBox::new
+            YamlCodec.DOUBLE.fieldOf("maxZ", BoundingBox::getMaxZ)
     );
     public static final YamlCodec<NamespacedKey> NAMESPACED_KEY = YamlCodec.STRING.map(NamespacedKey::fromString, NamespacedKey::asString);
 
@@ -84,10 +84,10 @@ public class BukkitYamlCodecs {
     public static final YamlCodec<GameRule<?>> GAME_RULE = YamlCodec.STRING.map(GameRule::getByName, GameRule::getName);
     public static final YamlCodec<Color> COLOR = YamlCodec.STRING.map(ColorUtil::fromHex, ColorUtil::toHex);
     public static final YamlCodec<EulerAngle> EULER_ANGLE = RecordYamlCodecBuilder.mapOf(
+            EulerAngle::new,
             YamlCodec.DOUBLE.fieldOf("x", EulerAngle::getX),
             YamlCodec.DOUBLE.fieldOf("y", EulerAngle::getY),
-            YamlCodec.DOUBLE.fieldOf("z", EulerAngle::getZ),
-            EulerAngle::new
+            YamlCodec.DOUBLE.fieldOf("z", EulerAngle::getZ)
     );
     public static final YamlCodec<PotionEffectType> POTION_EFFECT_TYPE = YamlCodec.STRING.map(PotionEffectType::getByName, PotionEffectType::getName);
     public static final YamlCodec<PotionType> POTION_TYPE = getEnumCodecMaybeKeyed(PotionType.class, PotionType.values());

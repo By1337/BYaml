@@ -21,8 +21,8 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0> YamlCodec<T> mapOf(
-            YamlField<T, F0> f0,
-            Function1<F0, T> creator
+            Function1<F0, T> creator,
+            YamlField<T, F0> f0
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -44,9 +44,9 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1> YamlCodec<T> mapOf(
+            Function2<F0, F1, T> creator,
             YamlField<T, F0> f0,
-            YamlField<T, F1> f1,
-            Function2<F0, F1, T> creator
+            YamlField<T, F1> f1
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -69,10 +69,10 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2> YamlCodec<T> mapOf(
+            Function3<F0, F1, F2, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
-            YamlField<T, F2> f2,
-            Function3<F0, F1, F2, T> creator
+            YamlField<T, F2> f2
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -96,11 +96,11 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3> YamlCodec<T> mapOf(
+            Function4<F0, F1, F2, F3, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
-            YamlField<T, F3> f3,
-            Function4<F0, F1, F2, F3, T> creator
+            YamlField<T, F3> f3
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -125,12 +125,12 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4> YamlCodec<T> mapOf(
+            Function5<F0, F1, F2, F3, F4, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
             YamlField<T, F3> f3,
-            YamlField<T, F4> f4,
-            Function5<F0, F1, F2, F3, F4, T> creator
+            YamlField<T, F4> f4
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -156,13 +156,13 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5> YamlCodec<T> mapOf(
+            Function6<F0, F1, F2, F3, F4, F5, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
             YamlField<T, F3> f3,
             YamlField<T, F4> f4,
-            YamlField<T, F5> f5,
-            Function6<F0, F1, F2, F3, F4, F5, T> creator
+            YamlField<T, F5> f5
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -189,14 +189,14 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6> YamlCodec<T> mapOf(
+            Function7<F0, F1, F2, F3, F4, F5, F6, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
             YamlField<T, F3> f3,
             YamlField<T, F4> f4,
             YamlField<T, F5> f5,
-            YamlField<T, F6> f6,
-            Function7<F0, F1, F2, F3, F4, F5, F6, T> creator
+            YamlField<T, F6> f6
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -224,6 +224,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7> YamlCodec<T> mapOf(
+            Function8<F0, F1, F2, F3, F4, F5, F6, F7, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -231,8 +232,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F4> f4,
             YamlField<T, F5> f5,
             YamlField<T, F6> f6,
-            YamlField<T, F7> f7,
-            Function8<F0, F1, F2, F3, F4, F5, F6, F7, T> creator
+            YamlField<T, F7> f7
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -261,6 +261,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8> YamlCodec<T> mapOf(
+            Function9<F0, F1, F2, F3, F4, F5, F6, F7, F8, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -269,8 +270,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F5> f5,
             YamlField<T, F6> f6,
             YamlField<T, F7> f7,
-            YamlField<T, F8> f8,
-            Function9<F0, F1, F2, F3, F4, F5, F6, F7, F8, T> creator
+            YamlField<T, F8> f8
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -300,6 +300,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9> YamlCodec<T> mapOf(
+            Function10<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -309,8 +310,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F6> f6,
             YamlField<T, F7> f7,
             YamlField<T, F8> f8,
-            YamlField<T, F9> f9,
-            Function10<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, T> creator
+            YamlField<T, F9> f9
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -341,6 +341,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10> YamlCodec<T> mapOf(
+            Function11<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -351,8 +352,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F7> f7,
             YamlField<T, F8> f8,
             YamlField<T, F9> f9,
-            YamlField<T, F10> f10,
-            Function11<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, T> creator
+            YamlField<T, F10> f10
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -384,6 +384,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11> YamlCodec<T> mapOf(
+            Function12<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -395,8 +396,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F8> f8,
             YamlField<T, F9> f9,
             YamlField<T, F10> f10,
-            YamlField<T, F11> f11,
-            Function12<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, T> creator
+            YamlField<T, F11> f11
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -429,6 +429,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12> YamlCodec<T> mapOf(
+            Function13<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -441,8 +442,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F9> f9,
             YamlField<T, F10> f10,
             YamlField<T, F11> f11,
-            YamlField<T, F12> f12,
-            Function13<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, T> creator
+            YamlField<T, F12> f12
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -476,6 +476,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13> YamlCodec<T> mapOf(
+            Function14<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -489,8 +490,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F10> f10,
             YamlField<T, F11> f11,
             YamlField<T, F12> f12,
-            YamlField<T, F13> f13,
-            Function14<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, T> creator
+            YamlField<T, F13> f13
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -525,6 +525,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14> YamlCodec<T> mapOf(
+            Function15<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -539,8 +540,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F11> f11,
             YamlField<T, F12> f12,
             YamlField<T, F13> f13,
-            YamlField<T, F14> f14,
-            Function15<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, T> creator
+            YamlField<T, F14> f14
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -576,6 +576,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15> YamlCodec<T> mapOf(
+            Function16<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -591,8 +592,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F12> f12,
             YamlField<T, F13> f13,
             YamlField<T, F14> f14,
-            YamlField<T, F15> f15,
-            Function16<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, T> creator
+            YamlField<T, F15> f15
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -629,6 +629,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16> YamlCodec<T> mapOf(
+            Function17<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -645,8 +646,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F13> f13,
             YamlField<T, F14> f14,
             YamlField<T, F15> f15,
-            YamlField<T, F16> f16,
-            Function17<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, T> creator
+            YamlField<T, F16> f16
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -684,6 +684,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17> YamlCodec<T> mapOf(
+            Function18<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -701,8 +702,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F14> f14,
             YamlField<T, F15> f15,
             YamlField<T, F16> f16,
-            YamlField<T, F17> f17,
-            Function18<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, T> creator
+            YamlField<T, F17> f17
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -741,6 +741,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18> YamlCodec<T> mapOf(
+            Function19<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -759,8 +760,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F15> f15,
             YamlField<T, F16> f16,
             YamlField<T, F17> f17,
-            YamlField<T, F18> f18,
-            Function19<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, T> creator
+            YamlField<T, F18> f18
     ) {
         return new MapYamlCodec<T>() {
             @Override
@@ -800,6 +800,7 @@ public class RecordYamlCodecBuilder {
     }
 
     public static <T, F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19> YamlCodec<T> mapOf(
+            Function20<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, T> creator,
             YamlField<T, F0> f0,
             YamlField<T, F1> f1,
             YamlField<T, F2> f2,
@@ -819,8 +820,7 @@ public class RecordYamlCodecBuilder {
             YamlField<T, F16> f16,
             YamlField<T, F17> f17,
             YamlField<T, F18> f18,
-            YamlField<T, F19> f19,
-            Function20<F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, T> creator
+            YamlField<T, F19> f19
     ) {
         return new MapYamlCodec<T>() {
             @Override
