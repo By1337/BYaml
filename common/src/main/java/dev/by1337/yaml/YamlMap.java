@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,6 +31,14 @@ public class YamlMap {
 
     public static YamlMap loadFromString(String yaml) {
         return YAML_READER.read(yaml);
+    }
+
+    public static YamlMap load(File file) {
+        try {
+            return load(new StringReader(Files.readString(file.toPath())));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static YamlMap load(Reader reader) {

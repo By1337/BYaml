@@ -16,7 +16,7 @@ class JsonDeduplicator {
 
     public JsonObject deduplicate(JsonObject object) {
         if (!object.has("properties")) return object;
-        JsonObject definitions = new JsonObject();
+        JsonObject definitions = getOrCreateJsonObject("definitions", object);
         merge(extractEnums(object, new JsonEnumHolder()).enums, definitions);
         var map = deduplicate0(object.getAsJsonObject("properties"), object);
         if (map.isEmpty()) return object;
@@ -26,6 +26,15 @@ class JsonDeduplicator {
         // merge(deduplicate0(definitions, definitions), definitions);
         object.add("definitions", definitions);
         return object;
+    }
+    private JsonObject getOrCreateJsonObject(String name, JsonObject jsonObject) {
+        if (jsonObject.get(name) instanceof JsonObject o) {
+            return o;
+        } else {
+            JsonObject obj = new JsonObject();
+            jsonObject.add(name, obj);
+            return obj;
+        }
     }
 
     private void merge(Map<String, JsonElement> map, JsonObject to) {

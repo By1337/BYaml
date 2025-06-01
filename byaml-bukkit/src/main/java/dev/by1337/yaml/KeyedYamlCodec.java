@@ -19,11 +19,14 @@ public class KeyedYamlCodec<T extends Keyed> implements YamlCodec<T> {
     public KeyedYamlCodec(final T[] keys) {
         Set<String> elements = new HashSet<>();
         for (T key : keys) {
-            map.put(key.getKey().asString(), key);
-            map.put(key.getKey().getKey(), key);
-            elements.add(key.getKey().getKey().toLowerCase());
-            if (key instanceof Enum<?> enumKey) {
-                map.put(enumKey.name().toLowerCase(), key);
+            try {
+                map.put(key.getKey().asString(), key);
+                map.put(key.getKey().getKey(), key);
+                elements.add(key.getKey().getKey().toLowerCase());
+                if (key instanceof Enum<?> enumKey) {
+                    map.put(enumKey.name().toLowerCase(), key);
+                }
+            } catch (Throwable ignored) {
             }
         }
         schemaType = JsonSchemaTypeBuilder.create().enumOf(elements).build();
@@ -32,11 +35,14 @@ public class KeyedYamlCodec<T extends Keyed> implements YamlCodec<T> {
     public KeyedYamlCodec(final Iterable<T> iterable) {
         Set<String> elements = new HashSet<>();
         for (T key : iterable) {
-            map.put(key.getKey().asString(), key);
-            map.put(key.getKey().getKey(), key);
-            elements.add(key.getKey().getKey().toLowerCase());
-            if (key instanceof Enum<?> enumKey) {
-                map.put(enumKey.name().toLowerCase(), key);
+            try {
+                map.put(key.getKey().asString(), key);
+                map.put(key.getKey().getKey(), key);
+                elements.add(key.getKey().getKey().toLowerCase());
+                if (key instanceof Enum<?> enumKey) {
+                    map.put(enumKey.name().toLowerCase(), key);
+                }
+            } catch (Throwable ignored) {
             }
         }
         schemaType = JsonSchemaTypeBuilder.create().enumOf(elements).build();

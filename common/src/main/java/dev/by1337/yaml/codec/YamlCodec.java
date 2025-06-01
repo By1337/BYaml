@@ -27,14 +27,14 @@ public interface YamlCodec<T> {
     YamlCodec<Short> SHORT = new PrimitiveMapper<>(Short.class, o -> Short.parseShort(o.toString()), SchemaTypes.INT);
     YamlCodec<Boolean> BOOL = new PrimitiveMapper<>(Boolean.class, o -> Boolean.parseBoolean(o.toString()), SchemaTypes.BOOL);
     YamlCodec<String> STRING = new PrimitiveMapper<>(String.class, Object::toString, SchemaTypes.STRING);
-    YamlCodec<Map<String, Object>> STRING_TO_OBJECT_MAP = mapOf(STRING, OBJECT);
+    YamlCodec<Map<String, Object>> STRING_TO_OBJECT = mapOf(STRING, OBJECT);
     YamlCodec<YamlMap> YAML_MAP = of(YamlValue::getAsYamlMap, YamlValue::wrap, SchemaTypes.OBJECT);
     YamlCodec<List<YamlMap>> YAML_MAP_LIST = YAML_MAP.listOf();
     YamlCodec<List<String>> STRING_LIST = STRING.listOf();
     YamlCodec<List<Integer>> INT_LIST = INT.listOf();
-    YamlCodec<Map<String, String>> STRING_TO_STRING_MAP = mapOf(STRING, STRING);
-    YamlCodec<Map<String, Integer>> STRING_TO_INT_MAP = mapOf(STRING, INT);
-    YamlCodec<Map<String, YamlMap>> STRING_TO_YAML_MAP_MAP = mapOf(STRING, YAML_MAP);
+    YamlCodec<Map<String, String>> STRING_TO_STRING = mapOf(STRING, STRING);
+    YamlCodec<Map<String, Integer>> STRING_TO_INT = mapOf(STRING, INT);
+    YamlCodec<Map<String, YamlMap>> STRING_TO_YAML_MAP = mapOf(STRING, YAML_MAP);
     YamlCodec<String> MULTI_LINE_STRING = of(v -> {
         if (v.isCollection()) return Joiner.on("\n").join(v.decode(STRING_LIST));
         return v.decode(STRING);

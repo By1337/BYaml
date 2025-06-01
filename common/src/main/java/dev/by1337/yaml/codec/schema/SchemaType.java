@@ -22,24 +22,28 @@ public class SchemaType {
         return new JsonSchemaTypeBuilder(deepCopy(object));
     }
 
+    // SchemaType -> List<SchemaType>
     @Contract(value = " -> new", pure = true)
     public SchemaType listOf() {
         return SchemaTypes.ARRAY.asBuilder().items(this).build();
     }
 
-    public JsonObject buildJson() {
-        var json = deepCopy(object);
-        JsonDeduplicator deduplicator = new JsonDeduplicator();
-        deduplicator.deduplicate(json);
-        return json;
-    }
-
-    public SchemaType or(SchemaType... other){
-        return JsonSchemaTypeBuilder.create().anyOf(other).addAnyOf(this).build();
-    }
+    // SchemaType -> Map<String, SchemaType>
+    @Contract(value = " -> new", pure = true)
     public SchemaType asMap(){
         return SchemaTypes.OBJECT.asBuilder().patternProperties(".*", this).build();
     }
+
+    @Contract(value = "_ -> new", pure = true)
+    public SchemaType or(SchemaType... other){
+        return JsonSchemaTypeBuilder.create().anyOf(other).addAnyOf(this).build();
+    }
+
+
+    public JsonObject buildJson() {
+        return new JsonDeduplicator().deduplicate(deepCopy(object));
+    }
+
 
     @SuppressWarnings("unchecked")
     private static <T extends JsonElement> T deepCopy(T val) {

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Contract;
 import java.util.Collection;
 import java.util.Map;
 
-public class JsonSchemaTypeBuilder {
+public  class JsonSchemaTypeBuilder {
     private final JsonObject jsonObject;
 
     public JsonSchemaTypeBuilder() {
@@ -21,6 +21,22 @@ public class JsonSchemaTypeBuilder {
 
     public static JsonSchemaTypeBuilder create() {
         return new JsonSchemaTypeBuilder();
+    }
+
+
+    @Contract("_, _ -> this")
+    public JsonSchemaTypeBuilder definitions(String definition, SchemaType schemaType) {
+        JsonObject definitions = getOrCreateJsonObject("definitions");
+        definitions.add(definition, schemaType.getObject());
+        return this;
+    }
+
+
+    @Contract("_ -> this")
+    public JsonSchemaTypeBuilder examples(String example) {
+        JsonArray examples = getOrCreateJsonArray("examples");
+        examples.add(example);
+        return this;
     }
 
     @Contract("_ -> this")
@@ -153,6 +169,18 @@ public class JsonSchemaTypeBuilder {
         return this;
     }
 
+
+    @SafeVarargs
+    @Contract("_ -> this")
+    public final  <T extends Enum<T>> JsonSchemaTypeBuilder enumOf(T... arr) {
+        JsonArray array = new JsonArray();
+        for (T element : arr) {
+            array.add(element.name().toLowerCase());
+        }
+        jsonObject.add("enum", array);
+        return this;
+    }
+
     @Contract("_ -> this")
     public JsonSchemaTypeBuilder enumOf(Collection<String> elements) {
         JsonArray array = new JsonArray();
@@ -243,6 +271,15 @@ public class JsonSchemaTypeBuilder {
             return o;
         } else {
             JsonObject obj = new JsonObject();
+            jsonObject.add(name, obj);
+            return obj;
+        }
+    }
+    private JsonArray getOrCreateJsonArray(String name) {
+        if (jsonObject.get(name) instanceof JsonArray o) {
+            return o;
+        } else {
+            JsonArray obj = new JsonArray();
             jsonObject.add(name, obj);
             return obj;
         }

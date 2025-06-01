@@ -33,11 +33,20 @@ public class SchemaTypes {
         return builder().enumOf(elements).build();
     }
 
-    public static SchemaType array(SchemaType type){
+    @SafeVarargs
+    public static <T extends Enum<T>> SchemaType enumOf(T... array) {
+        return builder().enumOf(array).build();
+    }
+
+    public static SchemaType array(SchemaType type) {
         return builder().type(Type.ARRAY).items(type).build();
     }
 
-    public static JsonSchemaTypeBuilder builder(){
+    public static SchemaType pattern(String pattern) {
+        return builder().types(Type.STRING).pattern(pattern).build();
+    }
+
+    public static JsonSchemaTypeBuilder builder() {
         return JsonSchemaTypeBuilder.create();
     }
 

@@ -6,7 +6,9 @@ import dev.by1337.yaml.codec.schema.SchemaType;
 import dev.by1337.yaml.codec.schema.SchemaTypes;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RecordYamlCodecBuilder {
@@ -892,10 +894,15 @@ public class RecordYamlCodecBuilder {
         private void buildSchemaType(){
             JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
             builder.type(SchemaTypes.Type.OBJECT);
+            List<String> required = new ArrayList<>();
             for (YamlField field : getFields()) {
                 builder.properties(field.name, field.codec.schema());
+                if (field.defaultValue == null){
+                    required.add(field.name);
+                }
             }
             builder.additionalProperties(false);
+            if (!required.isEmpty()) builder.required(required);
             schemaType = builder.build();
         }
     }
