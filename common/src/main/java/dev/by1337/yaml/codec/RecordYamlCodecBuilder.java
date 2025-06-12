@@ -13,9 +13,13 @@ import java.util.Map;
 
 public class RecordYamlCodecBuilder {
 
-    private static <T> T decodeField(Map<String, YamlValue> map, YamlField<?, T> field) {
+    private static <T> T decodeField(Map<String, YamlValue> map, YamlField<?, T> field, StringBuilder error) {
         if (map.containsKey(field.name)) {
-            return field.codec.decode(map.get(field.name));
+            DataResult<T> t = field.codec.decode(map.get(field.name));
+            if (t.hasError()) {
+                error.append("Errors in '").append(field.name).append("':\n  - ").append(t.error().replace("\n", "\n    ")).append("\n");
+            }
+            return t.orDefault(field.defaultValue);
         }
         return field.defaultValue;
     }
@@ -26,10 +30,19 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                return creator.apply(p0);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString()
+                    );
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -50,11 +63,20 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                return creator.apply(p0, p1);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString()
+                    );
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -76,12 +98,21 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                return creator.apply(p0, p1, p2);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString()
+                    );
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -104,13 +135,21 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                return creator.apply(p0, p1, p2, p3);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -134,14 +173,22 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                return creator.apply(p0, p1, p2, p3, p4);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -166,15 +213,23 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                return creator.apply(p0, p1, p2, p3, p4, p5);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -200,16 +255,24 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -236,17 +299,25 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -274,18 +345,26 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -314,19 +393,27 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -356,20 +443,28 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -400,21 +495,29 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -446,22 +549,30 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -494,23 +605,31 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -544,24 +663,32 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                F14 p14 = decodeField(map, f14);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    F14 p14 = decodeField(map, f14, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -596,25 +723,33 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                F14 p14 = decodeField(map, f14);
-                F15 p15 = decodeField(map, f15);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    F14 p14 = decodeField(map, f14, error);
+                    F15 p15 = decodeField(map, f15, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -650,26 +785,34 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                F14 p14 = decodeField(map, f14);
-                F15 p15 = decodeField(map, f15);
-                F16 p16 = decodeField(map, f16);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    F14 p14 = decodeField(map, f14, error);
+                    F15 p15 = decodeField(map, f15, error);
+                    F16 p16 = decodeField(map, f16, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -706,27 +849,35 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                F14 p14 = decodeField(map, f14);
-                F15 p15 = decodeField(map, f15);
-                F16 p16 = decodeField(map, f16);
-                F17 p17 = decodeField(map, f17);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    F14 p14 = decodeField(map, f14, error);
+                    F15 p15 = decodeField(map, f15, error);
+                    F16 p16 = decodeField(map, f16, error);
+                    F17 p17 = decodeField(map, f17, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -764,28 +915,36 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                F14 p14 = decodeField(map, f14);
-                F15 p15 = decodeField(map, f15);
-                F16 p16 = decodeField(map, f16);
-                F17 p17 = decodeField(map, f17);
-                F18 p18 = decodeField(map, f18);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    F14 p14 = decodeField(map, f14, error);
+                    F15 p15 = decodeField(map, f15, error);
+                    F16 p16 = decodeField(map, f16, error);
+                    F17 p17 = decodeField(map, f17, error);
+                    F18 p18 = decodeField(map, f18, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -824,29 +983,37 @@ public class RecordYamlCodecBuilder {
     ) {
         return new MapYamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
-                Map<String, YamlValue> map = value.getAsMap(YamlCodec.STRING, YamlCodec.identity());
-                F0 p0 = decodeField(map, f0);
-                F1 p1 = decodeField(map, f1);
-                F2 p2 = decodeField(map, f2);
-                F3 p3 = decodeField(map, f3);
-                F4 p4 = decodeField(map, f4);
-                F5 p5 = decodeField(map, f5);
-                F6 p6 = decodeField(map, f6);
-                F7 p7 = decodeField(map, f7);
-                F8 p8 = decodeField(map, f8);
-                F9 p9 = decodeField(map, f9);
-                F10 p10 = decodeField(map, f10);
-                F11 p11 = decodeField(map, f11);
-                F12 p12 = decodeField(map, f12);
-                F13 p13 = decodeField(map, f13);
-                F14 p14 = decodeField(map, f14);
-                F15 p15 = decodeField(map, f15);
-                F16 p16 = decodeField(map, f16);
-                F17 p17 = decodeField(map, f17);
-                F18 p18 = decodeField(map, f18);
-                F19 p19 = decodeField(map, f19);
-                return creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.identity()).flatMap(map -> {
+                    StringBuilder error = new StringBuilder();
+                    F0 p0 = decodeField(map, f0, error);
+                    F1 p1 = decodeField(map, f1, error);
+                    F2 p2 = decodeField(map, f2, error);
+                    F3 p3 = decodeField(map, f3, error);
+                    F4 p4 = decodeField(map, f4, error);
+                    F5 p5 = decodeField(map, f5, error);
+                    F6 p6 = decodeField(map, f6, error);
+                    F7 p7 = decodeField(map, f7, error);
+                    F8 p8 = decodeField(map, f8, error);
+                    F9 p9 = decodeField(map, f9, error);
+                    F10 p10 = decodeField(map, f10, error);
+                    F11 p11 = decodeField(map, f11, error);
+                    F12 p12 = decodeField(map, f12, error);
+                    F13 p13 = decodeField(map, f13, error);
+                    F14 p14 = decodeField(map, f14, error);
+                    F15 p15 = decodeField(map, f15, error);
+                    F16 p16 = decodeField(map, f16, error);
+                    F17 p17 = decodeField(map, f17, error);
+                    F18 p18 = decodeField(map, f18, error);
+                    F19 p19 = decodeField(map, f19, error);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
+                    }
+                    return DataResult.accept(
+                            () -> creator.apply(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19),
+                            t -> DataResult.error(error.toString(), t),
+                            error.isEmpty() ? null : error.toString());
+                });
             }
 
             @SuppressWarnings({"rawtypes"})
@@ -870,14 +1037,14 @@ public class RecordYamlCodecBuilder {
         @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
         public YamlValue encode(T value) {
-            Map<String, YamlValue> map = new LinkedHashMap<>();
+            Map<String, Object> map = new LinkedHashMap<>();
             for (YamlField field : getFields()) {
                 Object o = field.getter.apply(value);
                 if (o == null) {
                     o = field.defaultValue;
                 }
                 if (o != null) {
-                    map.put(field.name, field.codec.encode(o));
+                    map.put(field.name, field.codec.encode(o).getValue());
                 }
             }
             return YamlValue.wrap(map);
@@ -891,13 +1058,13 @@ public class RecordYamlCodecBuilder {
         }
 
         @SuppressWarnings({"rawtypes"})
-        private void buildSchemaType(){
+        private void buildSchemaType() {
             JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
             builder.type(SchemaTypes.Type.OBJECT);
             List<String> required = new ArrayList<>();
             for (YamlField field : getFields()) {
                 builder.properties(field.name, field.codec.schema());
-                if (field.defaultValue == null){
+                if (field.defaultValue == null) {
                     required.add(field.name);
                 }
             }

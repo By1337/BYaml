@@ -8,7 +8,7 @@ import dev.by1337.yaml.codec.schema.SchemaType;
 import dev.by1337.yaml.codec.schema.SchemaTypes;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +17,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public interface YamlCodec<T> {
-    YamlCodec<YamlValue> YAML_VALUE = of(Function.identity(), Function.identity(), SchemaTypes.ANY);
-    YamlCodec<Object> OBJECT = of(YamlValue::getValue, YamlValue::wrap, SchemaTypes.OBJECT);
+    YamlCodec<YamlValue> YAML_VALUE = of(DataResult::success, Function.identity(), SchemaTypes.ANY);
+    YamlCodec<Object> OBJECT = of(v -> DataResult.success(v.getValue()), YamlValue::wrap, SchemaTypes.OBJECT);
     YamlCodec<Integer> INT = new PrimitiveMapper<>(Integer.class, o -> Integer.parseInt(o.toString()), SchemaTypes.INT);
     YamlCodec<Byte> BYTE = new PrimitiveMapper<>(Byte.class, o -> Byte.parseByte(o.toString()), SchemaTypes.INT);
     YamlCodec<Double> DOUBLE = new PrimitiveMapper<>(Double.class, o -> Double.parseDouble(o.toString()), SchemaTypes.NUMBER);
@@ -28,7 +28,7 @@ public interface YamlCodec<T> {
     YamlCodec<Boolean> BOOL = new PrimitiveMapper<>(Boolean.class, o -> Boolean.parseBoolean(o.toString()), SchemaTypes.BOOL);
     YamlCodec<String> STRING = new PrimitiveMapper<>(String.class, Object::toString, SchemaTypes.STRING);
     YamlCodec<Map<String, Object>> STRING_TO_OBJECT = mapOf(STRING, OBJECT);
-    YamlCodec<YamlMap> YAML_MAP = of(YamlValue::getAsYamlMap, YamlValue::wrap, SchemaTypes.OBJECT);
+    YamlCodec<YamlMap> YAML_MAP = of(YamlValue::asYamlMap, YamlMap::get, SchemaTypes.OBJECT);
     YamlCodec<List<YamlMap>> YAML_MAP_LIST = YAML_MAP.listOf();
     YamlCodec<List<String>> STRING_LIST = STRING.listOf();
     YamlCodec<List<Integer>> INT_LIST = INT.listOf();
@@ -36,12 +36,16 @@ public interface YamlCodec<T> {
     YamlCodec<Map<String, Integer>> STRING_TO_INT = mapOf(STRING, INT);
     YamlCodec<Map<String, YamlMap>> STRING_TO_YAML_MAP = mapOf(STRING, YAML_MAP);
     YamlCodec<String> MULTI_LINE_STRING = of(v -> {
-        if (v.isCollection()) return Joiner.on("\n").join(v.decode(STRING_LIST));
+        if (v.isCollection()) return v.decode(STRING_LIST).mapValue(l -> Joiner.on("\n").join(l));
         return v.decode(STRING);
     }, YamlValue::wrap, SchemaTypes.STRINGS);
     YamlCodec<List<String>> STRINGS = STRING.listOrSingle();
 
-    T decode(YamlValue value);
+    DataResult<T> decode(YamlValue value);
+
+    default DataResult<T> decode(Object value) {
+       return decode(YamlValue.wrap(value));
+    }
 
     YamlValue encode(T value);
 
@@ -64,12 +68,12 @@ public interface YamlCodec<T> {
         return new YamlField<>(this, name, getter, setter, def);
     }
 
-    default YamlCodec<T> schema(Function<SchemaType, SchemaType> mutator){
+    default YamlCodec<T> schema(Function<SchemaType, SchemaType> mutator) {
         final YamlCodec<T> subCodec = this;
         final SchemaType schemaType = mutator.apply(schema());
         return new YamlCodec<>() {
             @Override
-            public T decode(YamlValue value) {
+            public DataResult<T> decode(YamlValue value) {
                 return subCodec.decode(value);
             }
 
@@ -85,11 +89,11 @@ public interface YamlCodec<T> {
         };
     }
 
-   default YamlCodec<T> schema(SchemaType schemaType){
-       final YamlCodec<T> subCodec = this;
+    default YamlCodec<T> schema(SchemaType schemaType) {
+        final YamlCodec<T> subCodec = this;
         return new YamlCodec<T>() {
             @Override
-            public T decode(YamlValue value) {
+            public DataResult<T> decode(YamlValue value) {
                 return subCodec.decode(value);
             }
 
@@ -109,8 +113,28 @@ public interface YamlCodec<T> {
         final YamlCodec<T> subCodec = this;
         return new YamlCodec<E>() {
             @Override
-            public E decode(YamlValue value) {
-                return map.apply(subCodec.decode(value));
+            public DataResult<E> decode(YamlValue value) {
+                return subCodec.decode(value).flatMap(v -> DataResult.accept(() -> map.apply(v), DataResult::error));
+            }
+
+            @Override
+            public YamlValue encode(E value) {
+                return subCodec.encode(demap.apply(value));
+            }
+
+            @Override
+            public @NotNull SchemaType schema() {
+                return subCodec.schema();
+            }
+        };
+    }
+
+    default <E> YamlCodec<E> flatMap(Function<T, DataResult<E>> map, Function<E, T> demap) {
+        final YamlCodec<T> subCodec = this;
+        return new YamlCodec<E>() {
+            @Override
+            public DataResult<E> decode(YamlValue value) {
+                return subCodec.decode(value).flatMap(map::apply);
             }
 
             @Override
@@ -130,12 +154,11 @@ public interface YamlCodec<T> {
         return new YamlCodec<>() {
             final YamlCodec<List<T>> listCodec = subCodec.listOf();
             final SchemaType type = SchemaTypes.oneOf(subCodec.schema(), subCodec.schema().listOf());
+
             @Override
-            public List<T> decode(YamlValue value) {
+            public DataResult<List<T>> decode(YamlValue value) {
                 if (value.isCollection()) return listCodec.decode(value);
-                var list = new ArrayList<T>();
-                list.add(subCodec.decode(value));
-                return list;
+                return subCodec.decode(value).flatMap(l -> DataResult.success(List.of(l)));
             }
 
             @Override
@@ -155,9 +178,10 @@ public interface YamlCodec<T> {
         final YamlCodec<T> subCodec = this;
         return new YamlCodec<>() {
             final SchemaType type = subCodec.schema().listOf();
+
             @Override
-            public List<T> decode(YamlValue value) {
-                return value.stream().map(subCodec::decode).collect(Collectors.toList());
+            public DataResult<List<T>> decode(YamlValue value) {
+                return value.asList(subCodec);
             }
 
             @Override
@@ -175,21 +199,45 @@ public interface YamlCodec<T> {
     static <K, V> YamlCodec<Map<K, V>> mapOf(final YamlCodec<K> keyCodec, final YamlCodec<V> valueCodec) {
         return new YamlCodec<>() {
             final SchemaType schemaType = SchemaTypes.OBJECT.asBuilder().patternProperties(".*", valueCodec.schema()).build();
+
             @Override
-            public Map<K, V> decode(YamlValue value) {
-                return value.streamMap().collect(Collectors.toMap(
-                        e -> keyCodec.decode(e.getKey()),
-                        e -> valueCodec.decode(e.getValue()),
-                        (v1, v2) -> v1,
-                        LinkedHashMap::new
-                ));
+            public DataResult<Map<K, V>> decode(YamlValue in) {
+                return in.streamMap().flatMap(s -> {
+                    Map<K, V> map = new LinkedHashMap<>();
+                    StringBuilder error = new StringBuilder();
+                    s.forEach(entry -> {
+                        DataResult<K> key = keyCodec.decode(entry.getKey());
+                        DataResult<V> value = valueCodec.decode(entry.getValue());
+                        K k = key.result();
+                        V v = value.result();
+                        if (key.hasError() || value.hasError()) {
+                            error.append("Errors in '").append(entry.getKey().getRaw()).append("':\n");
+                        }
+                        if (key.hasError()) {
+                            error.append("  - ").append(key.error().replace("\n", "\n    ")).append("\n");
+                        }
+                        if (value.hasError()) {
+                            error.append("  - ").append(value.error().replace("\n", "\n    ")).append("\n");
+                        }
+                        if (k != null && v != null) {
+                            map.put(k, v);
+                        }
+                    });
+                    if (error.isEmpty()) {
+                        return DataResult.success(map);
+                    } else {
+                        error.setLength(error.length() - 1);
+                        if (map.isEmpty()) return DataResult.error(error.toString());
+                        return DataResult.error(error.toString()).partial(map);
+                    }
+                });
             }
 
             @Override
             public YamlValue encode(Map<K, V> value) {
                 return YamlValue.wrap(value.entrySet().stream().collect(Collectors.toMap(
-                                e -> keyCodec.encode(e.getKey()),
-                                e -> valueCodec.encode(e.getValue()),
+                                e -> keyCodec.encode(e.getKey()).getValue(),
+                                e -> valueCodec.encode(e.getValue()).getValue(),
                                 (v1, v2) -> v1,
                                 LinkedHashMap::new
                         ))
@@ -203,11 +251,11 @@ public interface YamlCodec<T> {
         };
     }
 
-    static <T> YamlCodec<T> of(final Function<YamlValue, T> decoder, final Function<T, YamlValue> encoder, SchemaType type) {
-        return new YamlCodec<T>() {
+    static <T> YamlCodec<T> of(final Function<YamlValue, DataResult<T>> decoder, final Function<T, YamlValue> encoder, SchemaType type) {
+        return new YamlCodec<>() {
 
             @Override
-            public T decode(YamlValue value) {
+            public DataResult<T> decode(YamlValue value) {
                 return decoder.apply(value);
             }
 
@@ -224,25 +272,25 @@ public interface YamlCodec<T> {
     }
 
     static <T extends Enum<T>> YamlCodec<T> enumOf(Class<T> type) {
-        List<String> values = new ArrayList<>();
+        final Map<String, T> values = new HashMap<>();
         for (T enumConstant : type.getEnumConstants()) {
-            values.add(enumConstant.name().toLowerCase());
+            values.put(enumConstant.name().toLowerCase(), enumConstant);
         }
-        SchemaType schemaType = JsonSchemaTypeBuilder.create().enumOf(values).build();
+        SchemaType schemaType = JsonSchemaTypeBuilder.create().enumOf(values.keySet()).build();
         return new YamlCodec<>() {
             @Override
-            public T decode(YamlValue value) {
-                String data = STRING.decode(value);
-                try {
-                    return Enum.valueOf(type, data);
-                } catch (IllegalArgumentException ignored) {
-                    return Enum.valueOf(type, data.toUpperCase());
-                }
+            public DataResult<T> decode(YamlValue value) {
+                return STRING.decode(value).flatMap(s -> {
+                    T val = values.get(s);
+                    if (val == null)
+                        return DataResult.error("Unknown value {} for {}", new Object[]{s, type.getSimpleName()});
+                    return DataResult.success(val);
+                });
             }
 
             @Override
             public YamlValue encode(T value) {
-                return YamlValue.wrap(value.name());
+                return YamlValue.wrap(value.name().toLowerCase());
             }
 
             @Override
@@ -264,12 +312,12 @@ public interface YamlCodec<T> {
         }
 
         @Override
-        public T decode(YamlValue value) {
+        public DataResult<T> decode(YamlValue value) {
             Object o = value.getValue();
             if (type.isAssignableFrom(o.getClass())) {
-                return type.cast(o);
+                return DataResult.success(type.cast(o));
             }
-            return decoder.apply(o);
+            return DataResult.accept(() -> decoder.apply(o), t -> DataResult.error(t.getMessage()));
         }
 
         @Override

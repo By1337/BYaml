@@ -1,7 +1,7 @@
 package dev.by1337.yaml;
 
-import dev.by1337.yaml.codec.CodecFinder;
 import dev.by1337.yaml.codec.YamlCodec;
+import dev.by1337.yaml.codec.YamlHolder;
 import dev.by1337.yaml.util.YamlReader;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class YamlMap {
+public class YamlMap implements YamlHolder {
     @ApiStatus.Internal
     private static YamlReader YAML_READER;
 
@@ -63,17 +63,17 @@ public class YamlMap {
     }
 
     public YamlValue get() {
-        return YamlValue.wrapUnsafe(this);
+        return YamlValue.wrap(this);
     }
 
     @NotNull
     public  YamlValue get(@NotNull String path, @Nullable Object def) {
-       return YamlValue.wrapUnsafe(getRaw(path, def));
+       return YamlValue.wrap(getRaw(path, def));
     }
 
     @NotNull
     public YamlValue get(@NotNull String path) {
-        return YamlValue.wrapUnsafe(getRaw(path));
+        return YamlValue.wrap(getRaw(path));
     }
 
     @Nullable
@@ -107,30 +107,15 @@ public class YamlMap {
         return last;
     }
 
-    @Nullable
-    @SuppressWarnings("unchecked")
-    private <T> Object serialize(@Nullable T obj) {
-        if (obj == null) return null;
-        if (obj instanceof YamlMap) return ((YamlMap) obj).map;
-        Object o = YamlValue.unpack(obj);
-
-        YamlCodec<T> codec = (YamlCodec<T>) CodecFinder.INSTANCE.getCodec(o.getClass());
-        if (codec == null) return o;
-        return codec.encode((T) o).unpack();
-    }
-
     public <T> void set(@NotNull String path, @Nullable T o, YamlCodec<T> codec) {
-        if (o == null) setRaw(path, null);
-        else set(path, codec.encode(o));
+        if (o == null) set(path, null);
+        else set(path, codec.encode(o).getRaw());
     }
 
-
-    public void set(@NotNull String path, @Nullable Object o) {
-        setRaw(path, serialize(o));
-    }
 
     @SuppressWarnings("unchecked")
-    public void setRaw(@NotNull String path, @Nullable Object obj) {
+    public void set(@NotNull String path, @Nullable Object o) {
+        Object obj = o instanceof YamlHolder v ? v.getRaw() : o;
         String[] pathParts = path.split("\\.");
         Map<String, Object> currentMap = map;
 
@@ -164,6 +149,7 @@ public class YamlMap {
         return getRaw(key) != null;
     }
 
+    @Override
     public LinkedHashMap<String, Object> getRaw() {
         return map;
     }

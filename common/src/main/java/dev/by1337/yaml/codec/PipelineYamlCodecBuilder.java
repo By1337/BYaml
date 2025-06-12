@@ -1,6 +1,5 @@
 package dev.by1337.yaml.codec;
 
-import dev.by1337.yaml.YamlMap;
 import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
 import dev.by1337.yaml.codec.schema.SchemaType;
@@ -123,31 +122,40 @@ public class PipelineYamlCodecBuilder<T> {
 
             @Override
             @SuppressWarnings({"unchecked", "rawtypes"})
-            public T decode(YamlValue value) {
-                YamlMap map = value.getAsYamlMap();
-                T v = creator.get();
-                for (@NotNull YamlField field : fields) {
-                    var val = map.get(field.name);
-                    if (!val.isNull()) {
-                        field.setter.accept(v, field.codec.decode(val));
-                    } else if (field.defaultValue != null) {
-                        field.setter.accept(v, field.defaultValue);
+            public DataResult<T> decode(YamlValue value) {
+                return value.asMap(YamlCodec.STRING, YamlCodec.YAML_VALUE).flatMap(map -> {
+                    T v = creator.get();
+                    StringBuilder error = new StringBuilder();
+                    for (@NotNull YamlField field : fields) {
+                        var val = map.get(field.name);
+                        if (val != null) {
+                            DataResult<?> result = field.codec.decode(val);
+                            if (result.hasError()){
+                                error.append("Errors in '").append(field.name).append("':\n  - ").append(result.error().replace("\n", "\n    ")).append("\n");
+                            }
+                            if (result.hasResult()){
+                                field.setter.accept(v, result.result());
+                            }else if (field.defaultValue != null){
+                                field.setter.accept(v, field.defaultValue);
+                            }
+                        }
                     }
-                }
-                return v;
+                    if (!error.isEmpty()){
+                        error.setLength(error.length()-1);
+                        return DataResult.error(error.toString()).partial(v);
+                    }
+                    return DataResult.success(v);
+                });
             }
 
             @Override
             @SuppressWarnings({"unchecked", "rawtypes"})
             public YamlValue encode(T value) {
-                Map<String, YamlValue> map = new LinkedHashMap<>();
+                Map<String, Object> map = new LinkedHashMap<>();
                 for (YamlField field : fields) {
                     Object o = field.getter.apply(value);
-                    if (o == null) {
-                        o = field.defaultValue;
-                    }
                     if (o != null) {
-                        map.put(field.name, field.codec.encode(o));
+                        map.put(field.name, field.codec.encode(o).getValue());
                     }
                 }
                 return YamlValue.wrap(map);

@@ -1,15 +1,15 @@
 package dev.by1337.yaml;
 
-import dev.by1337.yaml.codec.CodecFinder;
+import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.YamlCodec;
-import org.jetbrains.annotations.Contract;
+import dev.by1337.yaml.codec.YamlHolder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public class YamlValue {
+public final class YamlValue implements YamlHolder {
     public static final YamlValue EMPTY = new YamlValue(null);
 
     private final @Nullable Object value;
@@ -21,250 +21,148 @@ public class YamlValue {
 
     public static YamlValue wrap(@Nullable final Object value) {
         if (value == null) return EMPTY;
-        if (value instanceof YamlMap map) return new YamlValue(map.getRaw());
-        return new YamlValue(unpack(value));
-    }
-
-    static YamlValue wrapUnsafe(@Nullable final Object value) {
-        if (value == null) return EMPTY;
-        if (value instanceof YamlMap map) return new YamlValue(map.getRaw());
+        if (value instanceof YamlHolder holder) return new YamlValue(holder.getRaw());
         return new YamlValue(value);
     }
 
-    public <T> T decode(YamlCodec<T> codec) {
+    public <T> DataResult<T> decode(YamlCodec<T> codec) {
         return codec.decode(this);
     }
 
-    public <T> T decode(YamlCodec<T> codec, T def) {
-        if (isNull()) return def;
-        return codec.decode(this);
-    }
-
-    public <T> T getAs(Class<T> type) {
-        var codec = CodecFinder.INSTANCE.getCodec(type);
-        if (codec == null) throw new IllegalStateException("No codec found for type: " + type.getName());
+    public <T> DataResult<T> decode(YamlCodec<T> codec, T def) {
+        if (isNull()) return DataResult.success(def);
         return codec.decode(this);
     }
 
     @SuppressWarnings("unchecked")
-    public YamlMap getAsYamlMap() {
-        reqMap();
+    public DataResult<YamlMap> asYamlMap() {
         if (value instanceof LinkedHashMap<?, ?>)
-            return new YamlMap((LinkedHashMap<String, Object>) value);
-        Map<String, Object> map = (Map<String, Object>) value;
-        return new YamlMap(new LinkedHashMap<>(map));
+            return DataResult.success(new YamlMap((LinkedHashMap<String, Object>) value));
+        if (value instanceof Map<?, ?> map)
+            return DataResult.success(new YamlMap(new LinkedHashMap<>((Map<String, Object>) map)));
+        return DataResult.error("Expected a Map, but found " + describeType() + ".");
     }
 
     public @Nullable Object getValue() {
         return value;
     }
 
-    public Stream<YamlValue> stream(Stream<YamlValue> def) {
-        if (!isCollection()) return def;
-        return stream();
+    public DataResult<Collection<?>> asCollection() {
+        if (value instanceof Collection<?>) {
+            return DataResult.success((Collection<?>) value);
+        }
+        return DataResult.error("Expected a Collection, but found " + describeType() + ".");
     }
 
-    public Stream<YamlValue> stream() {
-        reqCollection();
-        return ((Collection<?>) value).stream().map(YamlValue::wrapUnsafe);
+    public Stream<YamlValue> stream(Stream<YamlValue> def) {
+        return stream().orDefault(def);
+    }
+
+    public DataResult<Stream<YamlValue>> stream() {
+        return asCollection().flatMap(c -> DataResult.success(c.stream().map(YamlValue::wrap)));
     }
 
     public Stream<Map.Entry<YamlValue, YamlValue>> streamMap(Stream<Map.Entry<YamlValue, YamlValue>> def) {
-        if (!isMap()) return def;
-        return streamMap();
+        return streamMap().orDefault(def);
     }
 
-    @SuppressWarnings("unchecked")
-    public Stream<Map.Entry<YamlValue, YamlValue>> streamMap() {
-        reqMap();
-        return ((Map<Object, Object>) value).entrySet().stream().map(e -> new MapEntry<>(wrapUnsafe(e.getKey()), wrapUnsafe(e.getValue())));
-    }
-
-    public void reqCollection() {
-        if (!isCollection()) {
-            throw new IllegalStateException("Expected a List, but found " + describeType() + ".");
+    public DataResult<Map<Object, Object>> asMap() {
+        if (value instanceof Map<?, ?> map) {
+            return DataResult.success((Map<Object, Object>) map);
         }
+        return DataResult.error("Expected a Map, but found " + describeType() + ".");
     }
 
-    public void reqMap() {
-        if (!isMap()) {
-            throw new IllegalStateException("Expected a Map, but found " + describeType() + ".");
-        }
+
+    public DataResult<Stream<Map.Entry<YamlValue, YamlValue>>> streamMap() {
+        return asMap().flatMap(m -> DataResult.success(m.entrySet().stream().map(e -> new MapEntry<>(wrap(e.getKey()), wrap(e.getValue())))));
     }
 
-    public void reqNonNull() {
-        Objects.requireNonNull(value);
+    public <T> List<T> asList(YamlCodec<T> codec, List<T> def) {
+        return asList(codec).orDefault(def);
     }
 
-    public <T> List<T> getAsList(Class<T> type, List<T> def) {
-        if (!isCollection()) return def;
-        return getAsList(type);
+    public <T> DataResult<List<T>> asList(YamlCodec<T> codec) {
+        return stream().flatMap(s -> {
+            StringBuilder error = new StringBuilder();
+            var res = s.map(v -> {
+                DataResult<T> result = codec.decode(v);
+                if (result.hasError()) {
+                    error.append(result.error()).append("\n");
+                }
+                return result.result();
+            }).filter(Objects::nonNull).toList();
+            if (error.isEmpty()) {
+                return DataResult.success(res);
+            } else {
+                error.setLength(error.length() - 1);
+                if (res.isEmpty()) return DataResult.error(error.toString());
+                return DataResult.error(error.toString()).partial(res);
+            }
+        });
     }
 
-    public <T> List<T> getAsList(Class<T> type) {
-        var codec = CodecFinder.INSTANCE.getCodec(type);
-        if (codec == null) throw new IllegalStateException("No codec found for type: " + type.getName());
-        return getAsList(codec);
+    public <T> List<T> asList(Function<YamlValue, T> mapper, List<T> def) {
+        return asList(mapper).orDefault(def);
     }
 
-    public <T> List<T> getAsList(YamlCodec<T> codec, List<T> def) {
-        if (!isCollection()) return def;
-        return getAsList(codec);
+    public <T> DataResult<List<T>> asList(Function<YamlValue, T> mapper) {
+        return stream().flatMap(s -> DataResult.success(s.map(mapper).toList()));
     }
 
-    public <T> List<T> getAsList(YamlCodec<T> codec) {
-        reqCollection();
-        return ((Collection<?>) value).stream().map(v -> codec.decode(wrapUnsafe(v))).toList();
+    public DataResult<List<String>> getAsStringList() {
+        return asList(YamlCodec.STRING);
     }
 
-    public <T> List<T> getAsList(Function<YamlValue, T> mapper, List<T> def) {
-        if (isNull()) return def;
-        return getAsList(mapper);
+    public <K, V> Map<K, V> asMap(YamlCodec<K> keyCodec, YamlCodec<V> valueCodec, Map<K, V> def) {
+        return asMap(keyCodec, valueCodec).orDefault(def);
     }
 
-    public <T> List<T> getAsList(Function<YamlValue, T> mapper) {
-        return stream().map(mapper).toList();
-    }
-
-    public List<String> getAsStringList() {
-        return getAsList(YamlCodec.STRING);
-    }
-
-    public <K, V> Map<K, V> getAsMap(Class<K> keyType, Class<V> valueType, Map<K, V> def) {
-        if (isNull()) return def;
-        return getAsMap(keyType, valueType);
-    }
-
-    public <K, V> Map<K, V> getAsMap(Class<K> keyType, Class<V> valueType) {
-        var keyCodec = CodecFinder.INSTANCE.getCodec(keyType);
-        if (keyCodec == null) throw new IllegalStateException("No codec found for type: " + keyType.getName());
-        var valueCodec = CodecFinder.INSTANCE.getCodec(valueType);
-        if (valueCodec == null) throw new IllegalStateException("No codec found for type: " + valueType.getName());
-        return getAsMap(keyCodec, valueCodec);
-    }
-
-    public <K, V> Map<K, V> getAsMap(YamlCodec<K> keyCodec, YamlCodec<V> valueCodec, Map<K, V> def) {
-        if (isNull()) return def;
-        return getAsMap(keyCodec, valueCodec);
-    }
-
-    public <K, V> Map<K, V> getAsMap(YamlCodec<K> keyCodec, YamlCodec<V> valueCodec) {
+    public <K, V> DataResult<Map<K, V>> asMap(YamlCodec<K> keyCodec, YamlCodec<V> valueCodec) {
         return YamlCodec.mapOf(keyCodec, valueCodec).decode(this);
     }
 
-    public <K, V> Map<K, V> getAsMap(Class<K> keyType, Function<YamlValue, V> valueDecoder, Map<K, V> def) {
-        if (isNull()) return def;
-        return getAsMap(keyType, valueDecoder);
+
+    public <K, V> Map<K, V> asMap(YamlCodec<K> keyCodec, Function<YamlValue, V> valueDecoder, Map<K, V> def) {
+        return asMap(keyCodec, valueDecoder).orDefault(def);
     }
 
-    public <K, V> Map<K, V> getAsMap(Class<K> keyType, Function<YamlValue, V> valueDecoder) {
-        var keyCodec = CodecFinder.INSTANCE.getCodec(keyType);
-        if (keyCodec == null) throw new IllegalStateException("No codec found for type: " + keyType.getName());
-        return getAsMap(keyCodec, valueDecoder);
+    public <K, V> DataResult<Map<K, V>> asMap(YamlCodec<K> keyCodec, Function<YamlValue, V> valueDecoder) {
+        return asMap(v -> keyCodec.decode(v).getOrThrow(), valueDecoder);
     }
 
-    public <K, V> Map<K, V> getAsMap(YamlCodec<K> keyCodec, Function<YamlValue, V> valueDecoder, Map<K, V> def) {
-        if (isNull()) return def;
-        return getAsMap(keyCodec, valueDecoder);
+    public <K, V> Map<K, V> asMap(Function<YamlValue, K> keyDecoder, Function<YamlValue, V> valueDecoder, Map<K, V> def) {
+        return asMap(keyDecoder, valueDecoder).orDefault(def);
     }
 
-    public <K, V> Map<K, V> getAsMap(YamlCodec<K> keyCodec, Function<YamlValue, V> valueDecoder) {
-        return getAsMap(keyCodec::decode, valueDecoder);
+    public <K, V> DataResult<Map<K, V>> asMap(Function<YamlValue, K> keyDecoder, Function<YamlValue, V> valueDecoder) {
+        return streamMap().flatMap(s -> {
+            Map<K, V> result = new LinkedHashMap<>();
+            StringBuilder error = new StringBuilder();
+            s.forEach(entry -> {
+                DataResult<K> key = DataResult.accept(() -> keyDecoder.apply(entry.getKey()), DataResult::error);
+                DataResult<V> value = DataResult.accept(() -> valueDecoder.apply(entry.getValue()), DataResult::error);
+                K k = key.result();
+                V v = value.result();
+                if (key.hasError()){
+                    error.append("Invalid key: ").append(key.error()).append("\n");
+                }
+                if (value.hasError()){
+                    error.append("Invalid value: ").append(value.error()).append("\n");
+                }
+                if (k != null && v != null) {
+                    result.put(k, v);
+                }
+            });
+            if (error.isEmpty()) {
+                return DataResult.success(result);
+            } else {
+                error.setLength(error.length() - 1);
+                if (result.isEmpty()) return DataResult.error(error.toString());
+                return DataResult.error(error.toString()).partial(result);
+            }
+        });
     }
-
-    public <K, V> Map<K, V> getAsMap(Function<YamlValue, K> keyDecoder, Function<YamlValue, V> valueDecoder, Map<K, V> def) {
-        if (isNull()) return def;
-        return getAsMap(keyDecoder, valueDecoder);
-    }
-
-    public <K, V> Map<K, V> getAsMap(Function<YamlValue, K> keyDecoder, Function<YamlValue, V> valueDecoder) {
-        Map<K, V> result = new LinkedHashMap<>();
-        streamMap().forEach(entry -> result.put(keyDecoder.apply(entry.getValue()), valueDecoder.apply(entry.getValue())));
-        return result;
-    }
-
-
-    public Integer getAsInt() {
-        reqNonNull();
-        return YamlCodec.INT.decode(this);
-    }
-
-    public Integer getAsInt(int def) {
-        if (isNull()) return def;
-        return YamlCodec.INT.decode(this);
-    }
-
-    public Byte getAsByte() {
-        reqNonNull();
-        return YamlCodec.BYTE.decode(this);
-    }
-
-    public Byte getAsByte(byte def) {
-        if (isNull()) return def;
-        return YamlCodec.BYTE.decode(this);
-    }
-
-    public Double getAsDouble() {
-        reqNonNull();
-        return YamlCodec.DOUBLE.decode(this);
-    }
-
-    public Double getAsDouble(double def) {
-        if (isNull()) return def;
-        return YamlCodec.DOUBLE.decode(this);
-    }
-
-    public Long getAsLong() {
-        reqNonNull();
-        return YamlCodec.LONG.decode(this);
-    }
-
-    public Long getAsLong(long def) {
-        if (isNull()) return def;
-        return YamlCodec.LONG.decode(this);
-    }
-
-    public Float getAsFloat() {
-        reqNonNull();
-        return YamlCodec.FLOAT.decode(this);
-    }
-
-    public Float getAsFloat(float def) {
-        if (isNull()) return def;
-        return YamlCodec.FLOAT.decode(this);
-    }
-
-
-    public Short getAsShort() {
-        reqNonNull();
-        return YamlCodec.SHORT.decode(this);
-    }
-
-    public Short getAsShort(short def) {
-        if (isNull()) return def;
-        return YamlCodec.SHORT.decode(this);
-    }
-
-    public Boolean getAsBoolean() {
-        reqNonNull();
-        return YamlCodec.BOOL.decode(this);
-    }
-
-    public Boolean getAsBoolean(boolean def) {
-        if (isNull()) return def;
-        return YamlCodec.BOOL.decode(this);
-    }
-
-    public String getAsString() {
-        reqNonNull();
-        return YamlCodec.STRING.decode(this);
-    }
-
-    public String getAsString(String def) {
-        if (isNull()) return def;
-        return YamlCodec.STRING.decode(this);
-    }
-
 
     public boolean isMap() {
         return value instanceof Map<?, ?>;
@@ -282,47 +180,16 @@ public class YamlValue {
         return value == null;
     }
 
-    public Object unpack() {
-        return unpack(value);
-    }
-
-    @Contract("null -> null")
-    public static Object unpack(@Nullable Object val) {
-        Object o = val;
-        if (o instanceof YamlMap map) return map.getRaw();
-        if (o instanceof YamlValue) {
-            o = ((YamlValue) o).unpack();
-        }
-        if (o instanceof Map<?, ?> m) {
-            return unpackMap(m);
-        }
-        if (o instanceof Collection<?> list) {
-            return unpackCollection(list);
-        }
-        return o;
-    }
-
-    public static Map<?, ?> unpackMap(Map<?, ?> map) {
-        Map<Object, Object> result = new LinkedHashMap<>();
-        for (Object o : map.keySet()) {
-            result.put(unpack(o), unpack(map.get(o)));
-        }
-        return result;
-    }
-
-    public static Collection<?> unpackCollection(Collection<?> list) {
-        List<Object> result = new ArrayList<>(list.size());
-        for (Object o : list) {
-            result.add(unpack(o));
-        }
-        return result;
-    }
-
     private String describeType() {
         if (value == null) return "null";
         if (value instanceof Map) return "Map";
         if (value instanceof Collection) return "List";
         return value.getClass().getSimpleName();
+    }
+
+    @Override
+    public Object getRaw() {
+        return value;
     }
 
     private static class MapEntry<K, V> implements Map.Entry<K, V> {

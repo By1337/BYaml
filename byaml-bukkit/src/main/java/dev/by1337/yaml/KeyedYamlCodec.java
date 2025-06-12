@@ -1,5 +1,6 @@
 package dev.by1337.yaml;
 
+import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.YamlCodec;
 import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
 import dev.by1337.yaml.codec.schema.SchemaType;
@@ -49,9 +50,12 @@ public class KeyedYamlCodec<T extends Keyed> implements YamlCodec<T> {
     }
 
     @Override
-    public T decode(YamlValue value) {
-        String data = STRING.decode(value);
-        return map.get(data.toLowerCase());
+    public DataResult<T> decode(YamlValue value) {
+        return STRING.decode(value).flatMap(s -> {
+            var v = map.get(s.toLowerCase());
+            if (v == null) return DataResult.error("Unknown key: " + s);
+            return DataResult.success(v);
+        });
     }
 
     @Override

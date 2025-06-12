@@ -1,6 +1,5 @@
 package dev.by1337.yaml;
 
-import dev.by1337.yaml.codec.CodecFinder;
 import dev.by1337.yaml.codec.YamlCodec;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,7 @@
 package dev.by1337.yaml;
 
-import dev.by1337.yaml.codec.CodecFinder;
+
+import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.RecordYamlCodecBuilder;
 import dev.by1337.yaml.codec.YamlCodec;
 import io.papermc.paper.datapack.Datapack;
@@ -73,7 +74,20 @@ public class BukkitYamlCodecs {
             YamlCodec.DOUBLE.fieldOf("maxY", BoundingBox::getMaxY),
             YamlCodec.DOUBLE.fieldOf("maxZ", BoundingBox::getMaxZ)
     );
-    public static final YamlCodec<NamespacedKey> NAMESPACED_KEY = YamlCodec.STRING.map(NamespacedKey::fromString, NamespacedKey::asString);
+    public static final YamlCodec<NamespacedKey> NAMESPACED_KEY = YamlCodec.STRING.flatMap(s -> {
+        try {
+            if (s.contains(":")) {
+                NamespacedKey key = NamespacedKey.fromString(s);
+                if (key == null)
+                    return DataResult.error("Failed to decode NamespacedKey: Expected <space>:<name>, got " + s);
+                return DataResult.success(key);
+            } else {
+                return DataResult.success(NamespacedKey.minecraft(s));
+            }
+        } catch (Throwable e) {
+            return DataResult.error("Failed to decode NamespacedKey: " + e.getMessage());
+        }
+    }, NamespacedKey::asString);
 
     public static final YamlCodec<StructureType> STRUCTURE_TYPE = YamlCodec.STRING
             .map(s -> StructureType.getStructureTypes().get(s.toLowerCase()), StructureType::getName);
@@ -230,7 +244,7 @@ public class BukkitYamlCodecs {
     }
 
     static {
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.util.Vector.class, VECTOR);
+      /*  CodecFinder.INSTANCE.registerCodec(org.bukkit.util.Vector.class, VECTOR);
         CodecFinder.INSTANCE.registerCodec(org.bukkit.util.BoundingBox.class, BOUNDING_BOX);
         CodecFinder.INSTANCE.registerCodec(org.bukkit.NamespacedKey.class, NAMESPACED_KEY);
         CodecFinder.INSTANCE.registerCodec(org.bukkit.StructureType.class, STRUCTURE_TYPE);
@@ -358,7 +372,7 @@ public class BukkitYamlCodecs {
         CodecFinder.INSTANCE.registerCodec(io.papermc.paper.datapack.Datapack.Compatibility.class, DATAPACK_COMPATIBILITY);
         CodecFinder.INSTANCE.registerCodec(io.papermc.paper.inventory.ItemRarity.class, ITEM_RARITY);
         CodecFinder.INSTANCE.registerCodec(io.papermc.paper.world.MoonPhase.class, MOON_PHASE);
-        CodecFinder.INSTANCE.registerCodec(io.papermc.paper.enchantments.EnchantmentRarity.class, ENCHANTMENT_RARITY);
+        CodecFinder.INSTANCE.registerCodec(io.papermc.paper.enchantments.EnchantmentRarity.class, ENCHANTMENT_RARITY);*/
     }
 
 }
