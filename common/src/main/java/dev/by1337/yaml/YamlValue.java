@@ -30,8 +30,7 @@ public final class YamlValue implements YamlHolder {
     }
 
     public <T> DataResult<T> decode(YamlCodec<T> codec, T def) {
-        if (isNull()) return DataResult.success(def);
-        return codec.decode(this);
+        return codec.decode(this).partialIfHasNoResult(def);
     }
 
     @SuppressWarnings("unchecked")
@@ -144,10 +143,10 @@ public final class YamlValue implements YamlHolder {
                 DataResult<V> value = DataResult.accept(() -> valueDecoder.apply(entry.getValue()), DataResult::error);
                 K k = key.result();
                 V v = value.result();
-                if (key.hasError()){
+                if (key.hasError()) {
                     error.append("Invalid key: ").append(key.error()).append("\n");
                 }
-                if (value.hasError()){
+                if (value.hasError()) {
                     error.append("Invalid value: ").append(value.error()).append("\n");
                 }
                 if (k != null && v != null) {
@@ -172,6 +171,10 @@ public final class YamlValue implements YamlHolder {
         return value instanceof Collection<?>;
     }
 
+    public boolean isList() {
+        return isCollection();
+    }
+
     public boolean isPrimitive() {
         return !isMap() && !isCollection();
     }
@@ -190,6 +193,70 @@ public final class YamlValue implements YamlHolder {
     @Override
     public Object getRaw() {
         return value;
+    }
+
+    public DataResult<Integer> asInt() {
+        return decode(YamlCodec.INT);
+    }
+
+    public int asInt(int def) {
+        return decode(YamlCodec.INT).orDefault(def);
+    }
+
+    public DataResult<Byte> asByte() {
+        return decode(YamlCodec.BYTE);
+    }
+
+    public byte asByte(byte def) {
+        return decode(YamlCodec.BYTE).orDefault(def);
+    }
+
+    public DataResult<Double> asDouble() {
+        return decode(YamlCodec.DOUBLE);
+    }
+
+    public Double asDouble(double def) {
+        return decode(YamlCodec.DOUBLE).orDefault(def);
+    }
+
+    public DataResult<Float> asFloat() {
+        return decode(YamlCodec.FLOAT);
+    }
+
+    public float asFloat(float def) {
+        return decode(YamlCodec.FLOAT).orDefault(def);
+    }
+
+    public DataResult<Long> asLong() {
+        return decode(YamlCodec.LONG);
+    }
+
+    public long asLong(long def) {
+        return decode(YamlCodec.LONG).orDefault(def);
+    }
+
+    public DataResult<Short> asShort() {
+        return decode(YamlCodec.SHORT);
+    }
+
+    public short asShort(short def) {
+        return decode(YamlCodec.SHORT).orDefault(def);
+    }
+
+    public DataResult<Boolean> asBool() {
+        return decode(YamlCodec.BOOL);
+    }
+
+    public boolean asBool(boolean def) {
+        return decode(YamlCodec.BOOL).orDefault(def);
+    }
+
+    public DataResult<String> asString() {
+        return decode(YamlCodec.STRING);
+    }
+
+    public String asString(String def) {
+        return decode(YamlCodec.STRING).orDefault(def);
     }
 
     private static class MapEntry<K, V> implements Map.Entry<K, V> {

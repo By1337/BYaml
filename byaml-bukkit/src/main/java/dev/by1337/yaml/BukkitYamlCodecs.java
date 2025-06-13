@@ -79,7 +79,7 @@ public class BukkitYamlCodecs {
             if (s.contains(":")) {
                 NamespacedKey key = NamespacedKey.fromString(s);
                 if (key == null)
-                    return DataResult.error("Failed to decode NamespacedKey: Expected <space>:<name>, got " + s);
+                    return DataResult.error("Failed to decode NamespacedKey: Expected: '<space>:<name>', but got " + s);
                 return DataResult.success(key);
             } else {
                 return DataResult.success(NamespacedKey.minecraft(s));
@@ -96,7 +96,13 @@ public class BukkitYamlCodecs {
     public static final YamlCodec<OfflinePlayer> OFFLINE_PLAYER = UUID.map(Bukkit::getOfflinePlayer, OfflinePlayer::getUniqueId);
     public static final YamlCodec<World> WORLD = YamlCodec.STRING.map(Bukkit::getWorld, World::getName);
     public static final YamlCodec<GameRule<?>> GAME_RULE = YamlCodec.STRING.map(GameRule::getByName, GameRule::getName);
-    public static final YamlCodec<Color> COLOR = YamlCodec.STRING.map(ColorUtil::fromHex, ColorUtil::toHex);
+    public static final YamlCodec<Color> COLOR = YamlCodec.STRING.flatMap(s -> {
+        try {
+            return DataResult.success(ColorUtil.fromHex(s));
+        }catch (Throwable e) {
+            return DataResult.error("Failed to decode color: Expected: '#rrggbb', but got " + s);
+        }
+    }, ColorUtil::toHex);
     public static final YamlCodec<EulerAngle> EULER_ANGLE = RecordYamlCodecBuilder.mapOf(
             EulerAngle::new,
             YamlCodec.DOUBLE.fieldOf("x", EulerAngle::getX),
@@ -108,22 +114,22 @@ public class BukkitYamlCodecs {
     public static final YamlCodec<ServicePriority> SERVICE_PRIORITY = YamlCodec.enumOf(ServicePriority.class);
     public static final YamlCodec<WorldType> WORLD_TYPE = getEnumCodecMaybeKeyed(WorldType.class, WorldType.values());
 
-    public static final YamlCodec<Advancement> ADVANCEMENT = new KeyedYamlCodec<>(Registry.ADVANCEMENT);
-    public static final YamlCodec<Art> ART = new KeyedYamlCodec<>(Registry.ART);
-    public static final YamlCodec<Attribute> ATTRIBUTE = new KeyedYamlCodec<>(Registry.ATTRIBUTE);
-    public static final YamlCodec<Biome> BIOME = new KeyedYamlCodec<>(Registry.BIOME);
-    public static final YamlCodec<KeyedBossBar> BOSS_BAR = new KeyedYamlCodec<>(Registry.BOSS_BARS);
-    public static final YamlCodec<Enchantment> ENCHANTMENT = new KeyedYamlCodec<>(Registry.ENCHANTMENT);
-    public static final YamlCodec<EntityType> ENTITY_TYPE = new KeyedYamlCodec<>(Registry.ENTITY_TYPE);
-    public static final YamlCodec<LootTables> LOOT_TABLE = new KeyedYamlCodec<>(Registry.LOOT_TABLES);
-    public static final YamlCodec<Material> MATERIAL = new KeyedYamlCodec<>(Registry.MATERIAL);
-    public static final YamlCodec<Statistic> STATISTIC = new KeyedYamlCodec<>(Registry.STATISTIC);
-    public static final YamlCodec<Sound> SOUND = new KeyedYamlCodec<>(Registry.SOUNDS);
-    public static final YamlCodec<Villager.Profession> VILLAGER_PROFESSION = new KeyedYamlCodec<>(Registry.VILLAGER_PROFESSION);
-    public static final YamlCodec<Villager.Type> VILLAGER_TYPE = new KeyedYamlCodec<>(Registry.VILLAGER_TYPE);
+    public static final YamlCodec<Advancement> ADVANCEMENT = new KeyedYamlCodec<>(Registry.ADVANCEMENT, Advancement.class.getSimpleName());
+    public static final YamlCodec<Art> ART = new KeyedYamlCodec<>(Registry.ART, Art.class.getSimpleName());
+    public static final YamlCodec<Attribute> ATTRIBUTE = new KeyedYamlCodec<>(Registry.ATTRIBUTE, Attribute.class.getSimpleName());
+    public static final YamlCodec<Biome> BIOME = new KeyedYamlCodec<>(Registry.BIOME, Biome.class.getSimpleName());
+    public static final YamlCodec<KeyedBossBar> BOSS_BAR = new KeyedYamlCodec<>(Registry.BOSS_BARS, KeyedBossBar.class.getSimpleName());
+    public static final YamlCodec<Enchantment> ENCHANTMENT = new KeyedYamlCodec<>(Registry.ENCHANTMENT, Enchantment.class.getSimpleName());
+    public static final YamlCodec<EntityType> ENTITY_TYPE = new KeyedYamlCodec<>(Registry.ENTITY_TYPE, EntityType.class.getSimpleName());
+    public static final YamlCodec<LootTables> LOOT_TABLE = new KeyedYamlCodec<>(Registry.LOOT_TABLES, LootTables.class.getSimpleName());
+    public static final YamlCodec<Material> MATERIAL = new KeyedYamlCodec<>(Registry.MATERIAL, Material.class.getSimpleName());
+    public static final YamlCodec<Statistic> STATISTIC = new KeyedYamlCodec<>(Registry.STATISTIC, Statistic.class.getSimpleName());
+    public static final YamlCodec<Sound> SOUND = new KeyedYamlCodec<>(Registry.SOUNDS, Sound.class.getSimpleName());
+    public static final YamlCodec<Villager.Profession> VILLAGER_PROFESSION = new KeyedYamlCodec<>(Registry.VILLAGER_PROFESSION, Villager.Profession.class.getSimpleName());
+    public static final YamlCodec<Villager.Type> VILLAGER_TYPE = new KeyedYamlCodec<>(Registry.VILLAGER_TYPE, Villager.Type.class.getSimpleName());
     @SuppressWarnings({"rawtypes"})
-    public static final YamlCodec<MemoryKey> MEMORY_MODULE_TYPE = new KeyedYamlCodec<>(Registry.MEMORY_MODULE_TYPE);
-    public static final YamlCodec<Fluid> FLUID = new KeyedYamlCodec<>(Registry.FLUID);
+    public static final YamlCodec<MemoryKey> MEMORY_MODULE_TYPE = new KeyedYamlCodec<>(Registry.MEMORY_MODULE_TYPE, MemoryKey.class.getSimpleName());
+    public static final YamlCodec<Fluid> FLUID = new KeyedYamlCodec<>(Registry.FLUID, Fluid.class.getSimpleName());
 
 
     public static final YamlCodec<EntityCategory> ENTITY_CATEGORY = getEnumCodecMaybeKeyed(EntityCategory.class, EntityCategory.values());
@@ -233,146 +239,10 @@ public class BukkitYamlCodecs {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static <T> YamlCodec<T> getEnumCodecMaybeKeyed(Class<T> type, T[] values) {
         if (values[0] instanceof Keyed) {
-            return (YamlCodec<T>) new KeyedYamlCodec<>((Keyed[]) values);
+            return (YamlCodec<T>) new KeyedYamlCodec<>((Keyed[]) values, type.getSimpleName());
         }
 
         return (YamlCodec<T>) YamlCodec.enumOf((Class<Enum>) type);
-    }
-
-    static void load() {
-        // NOP
-    }
-
-    static {
-      /*  CodecFinder.INSTANCE.registerCodec(org.bukkit.util.Vector.class, VECTOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.util.BoundingBox.class, BOUNDING_BOX);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.NamespacedKey.class, NAMESPACED_KEY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.StructureType.class, STRUCTURE_TYPE);
-        CodecFinder.INSTANCE.registerCodec(java.util.UUID.class, UUID);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.OfflinePlayer.class, OFFLINE_PLAYER);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.World.class, WORLD);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Color.class, COLOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.util.EulerAngle.class, EULER_ANGLE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.potion.PotionEffectType.class, POTION_EFFECT_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.potion.PotionType.class, POTION_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.plugin.ServicePriority.class, SERVICE_PRIORITY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.WorldType.class, WORLD_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.advancement.Advancement.class, ADVANCEMENT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Art.class, ART);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.attribute.Attribute.class, ATTRIBUTE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.Biome.class, BIOME);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.boss.KeyedBossBar.class, BOSS_BAR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.enchantments.Enchantment.class, ENCHANTMENT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.EntityType.class, ENTITY_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.loot.LootTables.class, LOOT_TABLE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Material.class, MATERIAL);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Statistic.class, STATISTIC);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Sound.class, SOUND);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Villager.Profession.class, VILLAGER_PROFESSION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Villager.Type.class, VILLAGER_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.memory.MemoryKey.class, MEMORY_MODULE_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Fluid.class, FLUID);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.EntityCategory.class, ENTITY_CATEGORY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.structure.StructureRotation.class, STRUCTURE_ROTATION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.TreeType.class, TREE_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.banner.PatternType.class, PATTERN_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.metadata.LazyMetadataValue.CacheStrategy.class, LAZY_METADATA_VALUE_CACHE_STRATEGY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.Rail.Shape.class, RAIL_SHAPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.TreeSpecies.class, TREE_SPECIES);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.RedstoneWire.Connection.class, REDSTONE_WIRE_CONNECTION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.enchantments.EnchantmentTarget.class, ENCHANTMENT_TARGET);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.boss.BarColor.class, BAR_COLOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.inventory.InventoryView.Property.class, INVENTORY_VIEW_PROPERTY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.inventory.EquipmentSlot.class, EQUIPMENT_SLOT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Rabbit.Type.class, RABBIT_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Axis.class, AXIS);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.material.types.MushroomBlockTexture.class, MUSHROOM_BLOCK_TEXTURE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.PistonMoveReaction.class, PISTON_MOVE_REACTION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.inventory.MainHand.class, MAIN_HAND);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.BanList.Type.class, BAN_LIST_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.plugin.PluginAwareness.Flags.class, PLUGIN_AWARENESS_FLAGS);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.boss.BarFlag.class, BAR_FLAG);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.scoreboard.Team.Option.class, TEAM_OPTION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.scoreboard.RenderType.class, RENDER_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Stairs.Shape.class, STAIRS_SHAPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Llama.Color.class, LLAMA_COLOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.map.MapView.Scale.class, MAP_VIEW_SCALE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.TropicalFish.Pattern.class, TROPICAL_FISH_PATTERN);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.StructureBlock.Mode.class, STRUCTURE_BLOCK_MODE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.event.inventory.InventoryType.SlotType.class, INVENTORY_TYPE_SLOT_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.SoundCategory.class, SOUND_CATEGORY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.FaceAttachable.AttachedFace.class, FACE_ATTACHABLE_ATTACHED_FACE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Slab.Type.class, SLAB_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.HeightMap.class, HEIGHT_MAP);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Statistic.Type.class, STATISTIC_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Panda.Gene.class, PANDA_GENE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.ArmorStand.LockType.class, ARMOR_STAND_LOCK_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.structure.UsageMode.class, USAGE_MODE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Pose.class, POSE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Effect.Type.class, EFFECT_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.DyeColor.class, DYE_COLOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.inventory.ItemFlag.class, ITEM_FLAG);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.PortalType.class, PORTAL_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.EntityEffect.class, ENTITY_EFFECT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Door.Hinge.class, DOOR_HINGE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.Bisected.Half.class, BISECTED_HALF);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.conversations.Conversation.ConversationState.class, CONVERSATION_CONVERSATION_STATE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.NetherWartsState.class, NETHER_WARTS_STATE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.CropState.class, CROP_STATE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Spellcaster.Spell.class, SPELLCASTER_SPELL);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.World.Environment.class, WORLD_ENVIRONMENT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.BlockFace.class, BLOCK_FACE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.ExperienceOrb.SpawnReason.class, EXPERIENCE_ORB_SPAWN_REASON);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.CoalType.class, COAL_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.EnderDragon.Phase.class, ENDER_DRAGON_PHASE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.boss.DragonBattle.RespawnPhase.class, DRAGON_BATTLE_RESPAWN_PHASE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.AbstractArrow.PickupStatus.class, ABSTRACT_ARROW_PICKUP_STATUS);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Chest.Type.class, CHEST_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Difficulty.class, DIFFICULTY);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.TechnicalPiston.Type.class, TECHNICAL_PISTON_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Instrument.class, INSTRUMENT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Bed.Part.class, BED_PART);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.permissions.PermissionDefault.class, PERMISSION_DEFAULT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.GrassSpecies.class, GRASS_SPECIES);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Parrot.Variant.class, PARROT_VARIANT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Rotation.class, ROTATION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.FluidCollisionMode.class, FLUID_COLLISION_MODE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.scoreboard.DisplaySlot.class, DISPLAY_SLOT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.event.inventory.ClickType.class, CLICK_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Horse.Color.class, HORSE_COLOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Note.Tone.class, NOTE_TONE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.event.block.Action.class, BLOCK_CLICK_ACTION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.structure.Mirror.class, MIRROR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.GameMode.class, GAME_MODE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Effect.class, EFFECT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Cat.Type.class, CAT_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.event.inventory.DragType.class, DRAG_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Wall.Height.class, WALL_HEIGHT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.FishHook.HookState.class, FISH_HOOK_HOOK_STATE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Fox.Type.class, FOX_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Bell.Attachment.class, BELL_ATTACHMENT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Jigsaw.Orientation.class, JIGSAW_ORIENTATION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.boss.BarStyle.class, BAR_STYLE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.map.MapCursor.Type.class, MAP_CURSOR_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Comparator.Mode.class, COMPARATOR_MODE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.Horse.Style.class, HORSE_STYLE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.WeatherType.class, WEATHER_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.FireworkEffect.Type.class, FIREWORK_EFFECT_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.inventory.meta.BookMeta.Generation.class, BOOK_META_GENERATION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.event.inventory.InventoryAction.class, INVENTORY_ACTION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.event.inventory.InventoryType.class, INVENTORY_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.SandstoneType.class, SANDSTONE_TYPE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.block.data.type.Bamboo.Leaves.class, BAMBOO_LEAVES);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Particle.class, PARTICLE);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.attribute.AttributeModifier.Operation.class, ATTRIBUTE_MODIFIER_OPERATION);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.scoreboard.Team.OptionStatus.class, TEAM_OPTION_STATUS);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.ChatColor.class, CHAT_COLOR);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.entity.MushroomCow.Variant.class, MUSHROOM_COW_VARIANT);
-        CodecFinder.INSTANCE.registerCodec(org.bukkit.Raid.RaidStatus.class, RAID_RAID_STATUS);
-        CodecFinder.INSTANCE.registerCodec(io.papermc.paper.datapack.Datapack.Compatibility.class, DATAPACK_COMPATIBILITY);
-        CodecFinder.INSTANCE.registerCodec(io.papermc.paper.inventory.ItemRarity.class, ITEM_RARITY);
-        CodecFinder.INSTANCE.registerCodec(io.papermc.paper.world.MoonPhase.class, MOON_PHASE);
-        CodecFinder.INSTANCE.registerCodec(io.papermc.paper.enchantments.EnchantmentRarity.class, ENCHANTMENT_RARITY);*/
     }
 
 }

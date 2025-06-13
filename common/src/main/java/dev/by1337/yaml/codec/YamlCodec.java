@@ -8,10 +8,7 @@ import dev.by1337.yaml.codec.schema.SchemaType;
 import dev.by1337.yaml.codec.schema.SchemaTypes;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -281,7 +278,7 @@ public interface YamlCodec<T> {
             @Override
             public DataResult<T> decode(YamlValue value) {
                 return STRING.decode(value).flatMap(s -> {
-                    T val = values.get(s);
+                    T val = values.get(s.toLowerCase(Locale.ROOT));
                     if (val == null)
                         return DataResult.error("Unknown value {} for {}", new Object[]{s, type.getSimpleName()});
                     return DataResult.success(val);

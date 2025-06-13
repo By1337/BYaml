@@ -16,8 +16,10 @@ public class KeyedYamlCodec<T extends Keyed> implements YamlCodec<T> {
 
     private final Map<String, T> map = new HashMap<>();
     private final SchemaType schemaType;
+    private final String className;
 
-    public KeyedYamlCodec(final T[] keys) {
+    public KeyedYamlCodec(final T[] keys, String className) {
+        this.className = className;
         Set<String> elements = new HashSet<>();
         for (T key : keys) {
             try {
@@ -33,7 +35,8 @@ public class KeyedYamlCodec<T extends Keyed> implements YamlCodec<T> {
         schemaType = JsonSchemaTypeBuilder.create().enumOf(elements).build();
     }
 
-    public KeyedYamlCodec(final Iterable<T> iterable) {
+    public KeyedYamlCodec(final Iterable<T> iterable, String className) {
+        this.className = className;
         Set<String> elements = new HashSet<>();
         for (T key : iterable) {
             try {

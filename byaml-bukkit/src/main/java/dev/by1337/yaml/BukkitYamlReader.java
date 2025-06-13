@@ -1,6 +1,7 @@
 package dev.by1337.yaml;
 
 import dev.by1337.yaml.util.YamlReader;
+import org.bukkit.Color;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.MemorySection;
@@ -70,6 +71,17 @@ class BukkitYamlReader implements YamlReader {
 
     static {
         YamlMap.setYamlReader(new BukkitYamlReader());
-        BukkitYamlCodecs.load();
     }
+
+
+
+
+
+
+
+
+
+
+
+
 }
