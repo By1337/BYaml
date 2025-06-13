@@ -1,0 +1,17 @@
+```xml
+<repositories>
+    <repository>
+        <id>by1337-repo</id>
+        <url>https://repo.by1337.space/repository/maven-releases/</url>
+    </repository>
+</repositories>
+```
+```xml
+<dependencies>
+    <dependency>
+        <groupId>dev.by1337.yaml</groupId>
+        <artifactId>byaml-bukkit</artifactId>
+        <version>1.0</version>
+    </dependency>
+</dependencies>
+```

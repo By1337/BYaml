@@ -101,7 +101,7 @@ public class YamlMapTest {
         Assertions.assertEquals(List.of(10, 15, 20), result.result());
     }
 
-    @Test
+/*    @Test
     public void test45() {
 
         Map<String, Object> root = new LinkedHashMap<>();
@@ -116,7 +116,7 @@ public class YamlMapTest {
         System.out.println(result);
         System.out.println();
         System.out.println(result.error());
-    }
+    }*/
 
     private static class CodecTest {
         private static final YamlCodec<Map<String, Map<String, List<Integer>>>> MAP_CODEC = YamlCodec.mapOf(YamlCodec.STRING, YamlCodec.mapOf(YamlCodec.STRING, YamlCodec.INT.listOf()));

@@ -310,6 +310,7 @@ public interface YamlCodec<T> {
 
         @Override
         public DataResult<T> decode(YamlValue value) {
+            if (value.isNull()) return DataResult.error("value is null");
             Object o = value.getValue();
             if (type.isAssignableFrom(o.getClass())) {
                 return DataResult.success(type.cast(o));
