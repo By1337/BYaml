@@ -6,11 +6,13 @@ import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
 import dev.by1337.yaml.codec.schema.SchemaType;
 import dev.by1337.yaml.codec.schema.SchemaTypes;
+import dev.by1337.yaml.util.LazyLoad;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public interface YamlCodec<T> {
@@ -41,13 +43,24 @@ public interface YamlCodec<T> {
     DataResult<T> decode(YamlValue value);
 
     default DataResult<T> decode(Object value) {
-       return decode(YamlValue.wrap(value));
+        return decode(YamlValue.wrap(value));
     }
 
     YamlValue encode(T value);
 
     @NotNull
     SchemaType schema();
+
+    /**
+     * only for InlineYamlCodecBuilder
+     *
+     * @param getter
+     * @param <R>
+     * @return
+     */
+    default <R> YamlField<R, T> withGetter(Function<R, T> getter) {
+        return new YamlField<>(this, "none", getter);
+    }
 
     default <R> YamlField<R, T> fieldOf(String name, Function<R, T> getter) {
         return new YamlField<>(this, name, getter);
@@ -191,6 +204,57 @@ public interface YamlCodec<T> {
                 return type;
             }
         };
+    }
+    static <T> YamlCodec<T> lazyLoad(Supplier<YamlCodec<T>> getter){
+        LazyLoad<YamlCodec<T>> get = new LazyLoad<>(getter);
+        return new YamlCodec<T>() {
+            @Override
+            public DataResult<T> decode(YamlValue value) {
+                return get.get().decode(value);
+            }
+
+            @Override
+            public YamlValue encode(T value) {
+                return get.get().encode(value);
+            }
+
+            @Override
+            public @NotNull SchemaType schema() {
+                return get.get().schema();
+            }
+        };
+    }
+
+    static <T> YamlCodec<T> dispatchByShape(YamlCodec<T> primitive, YamlCodec<T> map){
+        return dispatchByShape(primitive, map, primitive);
+    }
+
+    static <T> YamlCodec<T> dispatchByShape(YamlCodec<T> primitive, YamlCodec<T> map, YamlCodec<T> encoder){
+        SchemaType schemaType = SchemaTypes.anyOf(primitive.schema(), map.schema());
+        return new YamlCodec<T>() {
+            @Override
+            public DataResult<T> decode(YamlValue value) {
+                return value.isMap() ? map.decode(value) : primitive.decode(value);
+            }
+
+            @Override
+            public YamlValue encode(T value) {
+                return encoder.encode(value);
+            }
+
+            @Override
+            public @NotNull SchemaType schema() {
+                return schemaType;
+            }
+        };
+    }
+
+    default YamlCodec<T> whenPrimitive(YamlCodec<T> primitive){
+        return dispatchByShape(primitive, this, this);
+    }
+
+    default YamlCodec<T> whenMap(YamlCodec<T> map){
+        return dispatchByShape(this, map, this);
     }
 
     static <K, V> YamlCodec<Map<K, V>> mapOf(final YamlCodec<K> keyCodec, final YamlCodec<V> valueCodec) {

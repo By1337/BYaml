@@ -2,6 +2,7 @@ package dev.by1337.yaml;
 
 
 import dev.by1337.yaml.codec.DataResult;
+import dev.by1337.yaml.codec.InlineYamlCodecBuilder;
 import dev.by1337.yaml.codec.RecordYamlCodecBuilder;
 import dev.by1337.yaml.codec.YamlCodec;
 import io.papermc.paper.datapack.Datapack;
@@ -58,12 +59,18 @@ import org.bukkit.util.Vector;
 
 public class BukkitYamlCodecs {
 
-    public static final YamlCodec<Vector> VECTOR = RecordYamlCodecBuilder.mapOf(
+    public static final YamlCodec<Vector> VECTOR = InlineYamlCodecBuilder.inline(
+            " ", "<x> <y> <z>",
+            Vector::new,
+            YamlCodec.DOUBLE.withGetter(Vector::getX),
+            YamlCodec.DOUBLE.withGetter(Vector::getY),
+            YamlCodec.DOUBLE.withGetter(Vector::getZ)
+    ).whenMap(RecordYamlCodecBuilder.mapOf(
             Vector::new,
             YamlCodec.DOUBLE.fieldOf("x", Vector::getX),
             YamlCodec.DOUBLE.fieldOf("y", Vector::getY),
             YamlCodec.DOUBLE.fieldOf("z", Vector::getZ)
-    );
+    ));
 
     public static final YamlCodec<BoundingBox> BOUNDING_BOX = RecordYamlCodecBuilder.mapOf(
             BoundingBox::new,
@@ -99,16 +106,23 @@ public class BukkitYamlCodecs {
     public static final YamlCodec<Color> COLOR = YamlCodec.STRING.flatMap(s -> {
         try {
             return DataResult.success(ColorUtil.fromHex(s));
-        }catch (Throwable e) {
+        } catch (Throwable e) {
             return DataResult.error("Failed to decode color: Expected: '#rrggbb', but got " + s);
         }
     }, ColorUtil::toHex);
-    public static final YamlCodec<EulerAngle> EULER_ANGLE = RecordYamlCodecBuilder.mapOf(
+
+    public static final YamlCodec<EulerAngle> EULER_ANGLE = InlineYamlCodecBuilder.inline(
+            " ", "<x> <y> <z>",
+            EulerAngle::new,
+            YamlCodec.DOUBLE.withGetter(EulerAngle::getX),
+            YamlCodec.DOUBLE.withGetter(EulerAngle::getY),
+            YamlCodec.DOUBLE.withGetter(EulerAngle::getZ)
+    ).whenMap(RecordYamlCodecBuilder.mapOf(
             EulerAngle::new,
             YamlCodec.DOUBLE.fieldOf("x", EulerAngle::getX),
             YamlCodec.DOUBLE.fieldOf("y", EulerAngle::getY),
             YamlCodec.DOUBLE.fieldOf("z", EulerAngle::getZ)
-    );
+    ));
     public static final YamlCodec<PotionEffectType> POTION_EFFECT_TYPE = YamlCodec.STRING.map(PotionEffectType::getByName, PotionEffectType::getName);
     public static final YamlCodec<PotionType> POTION_TYPE = getEnumCodecMaybeKeyed(PotionType.class, PotionType.values());
     public static final YamlCodec<ServicePriority> SERVICE_PRIORITY = YamlCodec.enumOf(ServicePriority.class);

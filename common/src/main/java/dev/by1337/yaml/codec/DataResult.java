@@ -1,6 +1,7 @@
 package dev.by1337.yaml.codec;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +42,11 @@ public interface DataResult<T> {
      */
     @Nullable String error();
 
+    @Contract("!null -> !null")
+    default @Nullable String errorOrDefault(@Nullable String def){
+        String err = error();
+        return err == null ? def : err;
+    }
     /**
      * Returns whether this result contains a non-null value.
      *
@@ -320,8 +326,7 @@ public interface DataResult<T> {
 
     default <R> DataResult<R> flatMap(ThrowingFunction<? super T, DataResult<R>> mapper) {
         if (result() == null) {
-            String msg = error();
-            return error((msg == null ? "Failed to map null! mapper: " + mapper.getClass() : msg));
+            return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
         }
         try {
             return mapper.apply(result());
@@ -352,8 +357,7 @@ public interface DataResult<T> {
      */
     default <R> DataResult<R> mapValue(ThrowingFunction<? super T, ? extends R> mapper) {
         if (result() == null) {
-            String msg = error();
-            return error((msg == null ? "Failed to map null! mapper: " + mapper.getClass() : msg));
+            return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
         }
         try {
             return success(mapper.apply(result()));
@@ -362,6 +366,23 @@ public interface DataResult<T> {
         }
     }
 
+    default DataResult<T> mapErrorIfHas(Function<String, String> mapper){
+        String error = error();
+        if (error == null) return this;
+        String msg = mapper.apply(error);
+        T res = result();
+        return new DataResult<T>() {
+            @Override
+            public @Nullable T result() {
+                return res;
+            }
+
+            @Override
+            public @Nullable String error() {
+                return msg;
+            }
+        };
+    }
 
 
     /**
