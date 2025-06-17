@@ -3,6 +3,7 @@ package dev.by1337.yaml.codec.schema;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.File;
@@ -10,6 +11,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SchemaHolder {
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
@@ -32,14 +35,18 @@ public class SchemaHolder {
         } else {
             settings = new JsonObject();
         }
-        JsonObject schemas;
-        if (settings.get("yaml.schemas") instanceof JsonObject o) {
-            schemas = o;
-        } else {
-            schemas = new JsonObject();
-            settings.add("yaml.schemas", schemas);
+        final Map<String, String> schemasMap = new HashMap<>();
+        if (settings.get("yaml.schemas") instanceof JsonObject schemas) {
+            for (Map.Entry<String, JsonElement> entry : schemas.entrySet()) {
+                if (entry.getValue().isJsonPrimitive()) {
+                    schemasMap.put(entry.getValue().getAsString(), entry.getKey());
+                }
+            }
         }
-        schemas.addProperty(getRelativePathWithDot(rootDir, schemaFile), filePattern);
+        schemasMap.put(filePattern, getRelativePathWithDot(rootDir, schemaFile));
+        JsonObject schemas = new JsonObject();
+        schemasMap.forEach((key, value) -> schemas.addProperty(value, key));
+        settings.add("yaml.schemas", schemas);
 
         try {
             Files.writeString(schemaFile.toPath(), GSON.toJson(schema.asBuilder().schema().title(title).build().buildJson()));
