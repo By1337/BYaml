@@ -6,6 +6,7 @@ import dev.by1337.yaml.codec.YamlHolder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -84,11 +85,13 @@ public final class YamlValue implements YamlHolder {
     public <T> DataResult<List<T>> asList(YamlCodec<T> codec) {
         return stream().flatMap(s -> {
             StringBuilder error = new StringBuilder();
+            AtomicInteger counter = new AtomicInteger();
             var res = s.map(v -> {
                 DataResult<T> result = codec.decode(v);
                 if (result.hasError()) {
-                    error.append(result.error()).append("\n");
+                    error.append("[").append(counter.get()).append("] ").append(result.error()).append("\n");
                 }
+                counter.getAndIncrement();
                 return result.result();
             }).filter(Objects::nonNull).toList();
             if (error.isEmpty()) {

@@ -329,7 +329,11 @@ public interface DataResult<T> {
             return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
         }
         try {
-            return mapper.apply(result());
+            var v = mapper.apply(result());
+            if (v.hasResult() && !v.hasError() && error() != null) {
+                return error(error()).partial(v.result());
+            }
+            return v;
         } catch (Throwable e) {
             return error("Failed to map data result!", e);
         }
@@ -360,7 +364,9 @@ public interface DataResult<T> {
             return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
         }
         try {
-            return success(mapper.apply(result()));
+            R r = mapper.apply(result());
+            if (error() != null) return error(error()).partial(r);
+            return success(r);
         } catch (Throwable e) {
             return error("Failed to map value!", e);
         }
