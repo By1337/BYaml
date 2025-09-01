@@ -1,30 +1,35 @@
 package dev.by1337.yaml.codec;
 
+import dev.by1337.yaml.YamlValue;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class YamlField<T, F> {
-    protected final YamlCodec<F> codec;
-    protected Function<T, F> getter;
-    protected final String name;
-    protected F defaultValue;
-    protected final BiConsumer<T, F> setter;
+public final class YamlField<T, F> {
+    final YamlCodec<F> codec;
+    Function<T, F> getter;
+    @Nullable
+    final String name;
+    F defaultValue;
+    final BiConsumer<T, F> setter;
 
-    public YamlField(YamlCodec<F> codec, String name, Function<T, F> getter, BiConsumer<T, F> setter) {
+    public YamlField(YamlCodec<F> codec, @Nullable String name, Function<T, F> getter, BiConsumer<T, F> setter) {
         this.codec = codec;
         this.name = name;
         this.getter = getter;
         this.setter = setter;
     }
 
-    public YamlField(YamlCodec<F> codec, String name, Function<T, F> getter) {
+    public YamlField(YamlCodec<F> codec, @Nullable String name, Function<T, F> getter) {
         this.codec = codec;
         this.name = name;
         this.getter = getter;
         setter = null;
     }
 
-    public YamlField(YamlCodec<F> codec, String name, Function<T, F> getter, F defaultValue) {
+    public YamlField(YamlCodec<F> codec, @Nullable String name, Function<T, F> getter, F defaultValue) {
         this.codec = codec;
         this.name = name;
         this.getter = getter;
@@ -32,13 +37,25 @@ public class YamlField<T, F> {
         setter = null;
     }
 
-    public YamlField(YamlCodec<F> codec, String name, Function<T, F> getter, BiConsumer<T, F> setter, F defaultValue) {
+    public YamlField(YamlCodec<F> codec, @Nullable String name, Function<T, F> getter, BiConsumer<T, F> setter, F defaultValue) {
         this.codec = codec;
         this.name = name;
         this.getter = getter;
         this.setter = setter;
         this.defaultValue = defaultValue;
     }
+
+    public DataResult<F> decode(Map<String, YamlValue> map){
+        if (name != null){
+            var value = map.get(name);
+            if (value != null) {
+                return codec.decode(value);
+            }
+            return DataResult.success(defaultValue);
+        }
+        return codec.decode(map);
+    }
+
 
     public YamlField<T, F> getterOf(Function<T, F> getter) {
         this.getter = getter;

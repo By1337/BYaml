@@ -1,10 +1,9 @@
 package dev.by1337.yaml;
 
 
-import dev.by1337.yaml.codec.DataResult;
-import dev.by1337.yaml.codec.InlineYamlCodecBuilder;
-import dev.by1337.yaml.codec.RecordYamlCodecBuilder;
+import dev.by1337.yaml.codec.*;
 import dev.by1337.yaml.codec.YamlCodec;
+import dev.by1337.yaml.codec.k2v.LookupCodec;
 import io.papermc.paper.datapack.Datapack;
 import io.papermc.paper.enchantments.EnchantmentRarity;
 import io.papermc.paper.inventory.ItemRarity;
@@ -56,6 +55,8 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
+
+import java.util.Arrays;
 
 public class BukkitYamlCodecs {
 
@@ -123,7 +124,7 @@ public class BukkitYamlCodecs {
             YamlCodec.DOUBLE.fieldOf("y", EulerAngle::getY),
             YamlCodec.DOUBLE.fieldOf("z", EulerAngle::getZ)
     ));
-    public static final YamlCodec<PotionEffectType> POTION_EFFECT_TYPE = YamlCodec.STRING.map(PotionEffectType::getByName, PotionEffectType::getName);
+    public static final YamlCodec<PotionEffectType> POTION_EFFECT_TYPE = new LookupCodec<>(Arrays.stream(PotionEffectType.values()).iterator(), PotionEffectType::getName);
     public static final YamlCodec<PotionType> POTION_TYPE = getEnumCodecMaybeKeyed(PotionType.class, PotionType.values());
     public static final YamlCodec<ServicePriority> SERVICE_PRIORITY = YamlCodec.enumOf(ServicePriority.class);
     public static final YamlCodec<WorldType> WORLD_TYPE = getEnumCodecMaybeKeyed(WorldType.class, WorldType.values());

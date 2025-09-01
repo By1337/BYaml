@@ -14,14 +14,11 @@ import java.util.Map;
 public class RecordYamlCodecBuilder {
 
     private static <T> T decodeField(Map<String, YamlValue> map, YamlField<?, T> field, StringBuilder error) {
-        if (map.containsKey(field.name)) {
-            DataResult<T> t = field.codec.decode(map.get(field.name));
-            if (t.hasError()) {
-                error.append("Errors in '").append(field.name).append("':\n  - ").append(t.error().replace("\n", "\n    ")).append("\n");
-            }
-            return t.orDefault(field.defaultValue);
+        DataResult<T> t = field.decode(map);
+        if (t.hasError()) {
+            error.append("Errors in '").append(field.name).append("':\n  - ").append(t.error().replace("\n", "\n    ")).append("\n");
         }
-        return field.defaultValue;
+        return t.orDefault(field.defaultValue);
     }
 
     public static <T, F0> YamlCodec<T> mapOf(
@@ -1063,9 +1060,13 @@ public class RecordYamlCodecBuilder {
             builder.type(SchemaTypes.Type.OBJECT);
             List<String> required = new ArrayList<>();
             for (YamlField field : getFields()) {
-                builder.properties(field.name, field.codec.schema());
-                if (field.defaultValue == null) {
-                    required.add(field.name);
+                if (field.name == null) {
+                    builder.properties(field.codec.schema().asBuilder());
+                } else {
+                    builder.properties(field.name, field.codec.schema());
+                    if (field.defaultValue == null) {
+                        required.add(field.name);
+                    }
                 }
             }
             builder.additionalProperties(false);

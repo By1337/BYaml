@@ -100,6 +100,13 @@ public  class JsonSchemaTypeBuilder {
         obj.add(key, type.getObject());
         return this;
     }
+    @Contract("_ -> this")
+    public JsonSchemaTypeBuilder properties(JsonSchemaTypeBuilder other) {
+        JsonObject obj = getOrCreateJsonObject("properties");
+        JsonObject obj2 = other.getOrCreateJsonObject("properties");
+        obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        return this;
+    }
 
     @Contract("_ -> this")
     public JsonSchemaTypeBuilder oneOf(SchemaType... types) {

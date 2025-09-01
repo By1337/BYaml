@@ -3,6 +3,10 @@ package dev.by1337.yaml.codec;
 import com.google.common.base.Joiner;
 import dev.by1337.yaml.YamlMap;
 import dev.by1337.yaml.YamlValue;
+import dev.by1337.yaml.codec.k2v.Key2ValueCodec;
+import dev.by1337.yaml.codec.k2v.LookupCodec;
+import dev.by1337.yaml.codec.k2v.WildcardLookupCodec;
+import dev.by1337.yaml.codec.list.ListCodec;
 import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
 import dev.by1337.yaml.codec.schema.SchemaType;
 import dev.by1337.yaml.codec.schema.SchemaTypes;
@@ -15,7 +19,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public interface YamlCodec<T> {
+public interface YamlCodec<T> extends LegacyYamlCodec<T> {
     YamlCodec<YamlValue> YAML_VALUE = of(DataResult::success, Function.identity(), SchemaTypes.ANY);
     YamlCodec<Object> OBJECT = of(v -> DataResult.success(v.getValue()), YamlValue::wrap, SchemaTypes.OBJECT);
     YamlCodec<Integer> INT = new PrimitiveMapper<>(Integer.class, o -> Integer.parseInt(o.toString()), SchemaTypes.INT);
@@ -38,7 +42,7 @@ public interface YamlCodec<T> {
         if (v.isCollection()) return v.decode(STRING_LIST).mapValue(l -> Joiner.on("\n").join(l));
         return v.decode(STRING);
     }, YamlValue::wrap, SchemaTypes.STRINGS);
-    YamlCodec<List<String>> STRINGS = STRING.listOrSingle();
+    YamlCodec<List<String>> STRINGS = STRING.listOf();
 
     DataResult<T> decode(YamlValue value);
 
@@ -51,15 +55,8 @@ public interface YamlCodec<T> {
     @NotNull
     SchemaType schema();
 
-    /**
-     * only for InlineYamlCodecBuilder
-     *
-     * @param getter
-     * @param <R>
-     * @return
-     */
     default <R> YamlField<R, T> withGetter(Function<R, T> getter) {
-        return new YamlField<>(this, "none", getter);
+        return new YamlField<>(this, null, getter);
     }
 
     default <R> YamlField<R, T> fieldOf(String name, Function<R, T> getter) {
@@ -159,53 +156,20 @@ public interface YamlCodec<T> {
         };
     }
 
+    @Deprecated
+    /**
+     * @deprecated {@link YamlCodec#listOf()}
+     */
     default YamlCodec<List<T>> listOrSingle() {
-        final YamlCodec<T> subCodec = this;
-        return new YamlCodec<>() {
-            final YamlCodec<List<T>> listCodec = subCodec.listOf();
-            final SchemaType type = SchemaTypes.oneOf(subCodec.schema(), subCodec.schema().listOf());
-
-            @Override
-            public DataResult<List<T>> decode(YamlValue value) {
-                if (value.isCollection()) return listCodec.decode(value);
-                return subCodec.decode(value).flatMap(l -> DataResult.success(List.of(l)));
-            }
-
-            @Override
-            public YamlValue encode(List<T> value) {
-                if (value.size() == 1) return subCodec.encode(value.get(0));
-                return listCodec.encode(value);
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                return type;
-            }
-        };
+        return listOf();
     }
 
-    default YamlCodec<List<T>> listOf() {
-        final YamlCodec<T> subCodec = this;
-        return new YamlCodec<>() {
-            final SchemaType type = subCodec.schema().listOf();
-
-            @Override
-            public DataResult<List<T>> decode(YamlValue value) {
-                return value.asList(subCodec);
-            }
-
-            @Override
-            public YamlValue encode(List<T> value) {
-                return YamlValue.wrap(value.stream().map(subCodec::encode).collect(Collectors.toList()));
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                return type;
-            }
-        };
+    @Override
+    default ListCodec<T> listOf() {
+        return new ListCodec<>(this);
     }
-    static <T> YamlCodec<T> lazyLoad(Supplier<YamlCodec<T>> getter){
+
+    static <T> YamlCodec<T> lazyLoad(Supplier<YamlCodec<T>> getter) {
         LazyLoad<YamlCodec<T>> get = new LazyLoad<>(getter);
         return new YamlCodec<T>() {
             @Override
@@ -225,11 +189,11 @@ public interface YamlCodec<T> {
         };
     }
 
-    static <T> YamlCodec<T> dispatchByShape(YamlCodec<T> primitive, YamlCodec<T> map){
+    static <T> YamlCodec<T> dispatchByShape(YamlCodec<T> primitive, YamlCodec<T> map) {
         return dispatchByShape(primitive, map, primitive);
     }
 
-    static <T> YamlCodec<T> dispatchByShape(YamlCodec<T> primitive, YamlCodec<T> map, YamlCodec<T> encoder){
+    static <T> YamlCodec<T> dispatchByShape(YamlCodec<T> primitive, YamlCodec<T> map, YamlCodec<T> encoder) {
         SchemaType schemaType = SchemaTypes.anyOf(primitive.schema(), map.schema());
         return new YamlCodec<T>() {
             @Override
@@ -249,12 +213,20 @@ public interface YamlCodec<T> {
         };
     }
 
-    default YamlCodec<T> whenPrimitive(YamlCodec<T> primitive){
+    default YamlCodec<T> whenPrimitive(YamlCodec<T> primitive) {
         return dispatchByShape(primitive, this, this);
     }
 
-    default YamlCodec<T> whenMap(YamlCodec<T> map){
+    default YamlCodec<T> whenMap(YamlCodec<T> map) {
         return dispatchByShape(this, map, this);
+    }
+
+    static <T> YamlCodec<List<T>> wildcard(Map<String, T> map) {
+        return new WildcardLookupCodec<>(map);
+    }
+
+    static <T> YamlCodec<T> lookup(Map<String, T> map) {
+        return new LookupCodec<>(map);
     }
 
     static <K, V> YamlCodec<Map<K, V>> mapOf(final YamlCodec<K> keyCodec, final YamlCodec<V> valueCodec) {
@@ -332,13 +304,22 @@ public interface YamlCodec<T> {
         };
     }
 
+    @Deprecated
     static <T extends Enum<T>> YamlCodec<T> enumOf(Class<T> type) {
+        return fromEnum(type);
+    }
+    static <T extends Enum<T>> Key2ValueCodec<T> fromEnum(Class<T> type) {
         final Map<String, T> values = new HashMap<>();
         for (T enumConstant : type.getEnumConstants()) {
             values.put(enumConstant.name().toLowerCase(), enumConstant);
         }
         SchemaType schemaType = JsonSchemaTypeBuilder.create().enumOf(values.keySet()).build();
-        return new YamlCodec<>() {
+        return new Key2ValueCodec<>() {
+            @Override
+            public Map<String, T> asMap() {
+                return values;
+            }
+
             @Override
             public DataResult<T> decode(YamlValue value) {
                 return STRING.decode(value).flatMap(s -> {

@@ -114,7 +114,11 @@ public class PipelineYamlCodecBuilder<T> {
             if (field.setter == null) {
                 throw new NullPointerException("Setter for field " + field.name + " is null");
             }
-            builder.properties(field.name, field.codec.schema());
+            if (field.name == null) {
+                builder.properties(field.codec.schema().asBuilder());
+            } else {
+                builder.properties(field.name, field.codec.schema());
+            }
         }
         builder.additionalProperties(false);
         return new YamlCodec<T>() {
@@ -127,21 +131,18 @@ public class PipelineYamlCodecBuilder<T> {
                     T v = creator.get();
                     StringBuilder error = new StringBuilder();
                     for (@NotNull YamlField field : fields) {
-                        var val = map.get(field.name);
-                        if (val != null) {
-                            DataResult<?> result = field.codec.decode(val);
-                            if (result.hasError()){
-                                error.append("Errors in '").append(field.name).append("':\n  - ").append(result.error().replace("\n", "\n    ")).append("\n");
-                            }
-                            if (result.hasResult()){
-                                field.setter.accept(v, result.result());
-                            }else if (field.defaultValue != null){
-                                field.setter.accept(v, field.defaultValue);
-                            }
+                        DataResult<?> result = field.decode(map);
+                        if (result.hasError()) {
+                            error.append("Errors in '").append(field.name).append("':\n  - ").append(result.error().replace("\n", "\n    ")).append("\n");
+                        }
+                        if (result.hasResult()) {
+                            field.setter.accept(v, result.result());
+                        } else if (field.defaultValue != null) {
+                            field.setter.accept(v, field.defaultValue);
                         }
                     }
-                    if (!error.isEmpty()){
-                        error.setLength(error.length()-1);
+                    if (!error.isEmpty()) {
+                        error.setLength(error.length() - 1);
                         return DataResult.error(error.toString()).partial(v);
                     }
                     return DataResult.success(v);
