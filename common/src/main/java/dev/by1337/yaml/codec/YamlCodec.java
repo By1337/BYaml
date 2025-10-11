@@ -221,6 +221,26 @@ public interface YamlCodec<T> extends LegacyYamlCodec<T> {
         return dispatchByShape(this, map, this);
     }
 
+    default YamlCodec<T> preDecode(Function<YamlValue, YamlValue> fixer) {
+        var subCodec = this;
+        return new  YamlCodec<T>() {
+            @Override
+            public DataResult<T> decode(YamlValue value) {
+                return subCodec.decode(fixer.apply(value));
+            }
+
+            @Override
+            public YamlValue encode(T value) {
+                return subCodec.encode(value);
+            }
+
+            @Override
+            public @NotNull SchemaType schema() {
+                return subCodec.schema();
+            }
+        };
+    }
+
     static <T> YamlCodec<List<T>> wildcard(Map<String, T> map) {
         return new WildcardLookupCodec<>(map);
     }
