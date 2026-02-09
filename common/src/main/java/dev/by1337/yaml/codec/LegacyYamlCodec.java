@@ -1,7 +1,5 @@
 package dev.by1337.yaml.codec;
 
-import org.jetbrains.annotations.ApiStatus;
-
 import java.util.List;
 
 @Deprecated

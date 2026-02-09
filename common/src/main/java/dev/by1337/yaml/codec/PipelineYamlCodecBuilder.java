@@ -1,30 +1,45 @@
 package dev.by1337.yaml.codec;
 
+import com.google.gson.JsonObject;
 import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
 import dev.by1337.yaml.codec.schema.SchemaType;
 import dev.by1337.yaml.codec.schema.SchemaTypes;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class PipelineYamlCodecBuilder<T> {
     private final Supplier<T> creator;
-    private final List<YamlField<T, ?>> fields = new ArrayList<>();
+    private final List<YamlField<? super T, ?>> fields;
+
+    public PipelineYamlCodecBuilder<T> and(PipelineYamlCodecBuilder<? super T> other) {
+        fields.addAll(other.fields);
+        return this;
+    }
+
+    private PipelineYamlCodecBuilder(Supplier<T> creator, List<YamlField<? super T, ?>> fields) {
+        this.creator = creator;
+        this.fields = fields;
+    }
 
     public PipelineYamlCodecBuilder(Supplier<T> creator) {
         this.creator = creator;
+        fields = new ArrayList<>();
     }
 
     public static <T> PipelineYamlCodecBuilder<T> of(Supplier<T> creator) {
         return new PipelineYamlCodecBuilder<T>(creator);
     }
+
+    public PipelineYamlCodecBuilder<T> copy() {
+        return new PipelineYamlCodecBuilder<>(creator, new ArrayList<>(fields));
+    }
+
+
 
     public <R> PipelineYamlCodecBuilder<T> field(YamlCodec<R> codec, String name, Function<T, R> getter, BiConsumer<T, R> setter) {
         return field(codec, name, getter, setter, null);
@@ -107,22 +122,31 @@ public class PipelineYamlCodecBuilder<T> {
         return this;
     }
 
+    private static <T> Supplier<SchemaType> schemaTypeSupplier(UUID key, List<YamlField<? super T, ?>> fields) {
+        return () -> {
+            JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
+            builder.type(SchemaTypes.Type.OBJECT);
+            for (YamlField<? super T, ?> field : fields) {
+                if (field.setter == null) {
+                    throw new NullPointerException("Setter for field " + field.name + " is null");
+                }
+                if (field.name == null) {
+                    builder.properties(field.codec.schema().asBuilder());
+                } else {
+                    builder.properties(field.name, field.codec.schema());
+                }
+            }
+            builder.additionalProperties(false);
+            return builder.build(key);
+        };
+    }
+
     public YamlCodec<T> build() {
-        JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
-        builder.type(SchemaTypes.Type.OBJECT);
-        for (YamlField<T, ?> field : fields) {
-            if (field.setter == null) {
-                throw new NullPointerException("Setter for field " + field.name + " is null");
-            }
-            if (field.name == null) {
-                builder.properties(field.codec.schema().asBuilder());
-            } else {
-                builder.properties(field.name, field.codec.schema());
-            }
-        }
-        builder.additionalProperties(false);
+
         return new YamlCodec<T>() {
-            final SchemaType schemaType = builder.build();
+            private final UUID key = UUID.randomUUID();
+            SchemaType schemaType;
+            final Supplier<SchemaType> schemaTypeSupplier = schemaTypeSupplier(key, new ArrayList<YamlField<? super T, ?>>(fields));
 
             @Override
             @SuppressWarnings({"unchecked", "rawtypes"})
@@ -152,11 +176,20 @@ public class PipelineYamlCodecBuilder<T> {
             @Override
             @SuppressWarnings({"unchecked", "rawtypes"})
             public YamlValue encode(T value) {
-                Map<String, Object> map = new LinkedHashMap<>();
+                Map<Object, Object> map = new LinkedHashMap<>();
                 for (YamlField field : fields) {
                     Object o = field.getter.apply(value);
                     if (o != null) {
-                        map.put(field.name, field.codec.encode(o).getValue());
+                        var v = field.codec.encode(o).getValue();
+                        if (field.name == null) {
+                            if (v instanceof Map<?, ?> m) {
+                                map.putAll(m);
+                            } else {
+                                map.put(Integer.toHexString(System.identityHashCode(v)), v);
+                            }
+                        } else {
+                            map.put(field.name, v);
+                        }
                     }
                 }
                 return YamlValue.wrap(map);
@@ -164,6 +197,9 @@ public class PipelineYamlCodecBuilder<T> {
 
             @Override
             public @NotNull SchemaType schema() {
+                if (schemaType != null) return schemaType;
+                schemaType = new SchemaType(key, new JsonObject()); // если рекурсивно вызовется schema()
+                schemaType = schemaTypeSupplier.get();
                 return schemaType;
             }
         };

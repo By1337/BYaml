@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Contract;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 
 public  class JsonSchemaTypeBuilder {
     private final JsonObject jsonObject;
@@ -23,6 +24,32 @@ public  class JsonSchemaTypeBuilder {
         return new JsonSchemaTypeBuilder();
     }
 
+    public static SchemaType newRef(String name){
+        return new JsonSchemaTypeBuilder().ref("#/definitions/" + name).build();
+    }
+
+    @Contract("_ -> this")
+    public JsonSchemaTypeBuilder remove(String key) {
+        jsonObject.remove(key);
+        return this;
+    }
+
+    @Contract("_ -> this")
+    public JsonSchemaTypeBuilder definitions(SchemaType schemaType) {
+        JsonObject definitions = getOrCreateJsonObject("definitions");
+        var v = SchemaType.deepCopy(schemaType.getObject());
+        var def = v.get("definitions");
+        if (def != null){
+            def.getAsJsonObject().entrySet()
+                    .forEach(e-> definitions.add(e.getKey(), e.getValue()));
+        }
+        v.remove("definitions");
+        String key = schemaType.getRandName().toString();
+        if (!definitions.has(key)){
+            definitions.add(schemaType.getRandName().toString(), v);
+        }
+        return this;
+    }
 
     @Contract("_, _ -> this")
     public JsonSchemaTypeBuilder definitions(String definition, SchemaType schemaType) {
@@ -64,7 +91,10 @@ public  class JsonSchemaTypeBuilder {
     @Contract("_ -> this")
     public JsonSchemaTypeBuilder properties(Map<String, SchemaType> properties) {
         JsonObject obj = getOrCreateJsonObject("properties");
-        properties.forEach((key, value) -> obj.add(key, value.getObject()));
+        properties.forEach((key, value) -> {
+            definitions(value);
+            obj.add(key, value.asRef());
+        });
         return this;
     }
 
@@ -76,35 +106,74 @@ public  class JsonSchemaTypeBuilder {
 
     @Contract("_ -> this")
     public JsonSchemaTypeBuilder items(SchemaType type) {
-        jsonObject.add("items", type.getObject());
+        definitions(type);
+        jsonObject.add("items", type.asRef());
         return this;
     }
 
     @Contract("_ -> this")
     public JsonSchemaTypeBuilder patternProperties(Map<String, SchemaType> properties) {
         JsonObject obj = getOrCreateJsonObject("patternProperties");
-        properties.forEach((key, value) -> obj.add(key, value.getObject()));
+        properties.forEach((key, value) -> {
+            definitions(value);
+            obj.add(key, value.asRef());
+        });
         return this;
     }
 
     @Contract("_,_ -> this")
     public JsonSchemaTypeBuilder patternProperties(String key, SchemaType type) {
         JsonObject obj = getOrCreateJsonObject("patternProperties");
-        obj.add(key, type.getObject());
+        definitions(type);
+        obj.add(key, type.asRef());
         return this;
     }
 
     @Contract("_,_ -> this")
     public JsonSchemaTypeBuilder properties(String key, SchemaType type) {
         JsonObject obj = getOrCreateJsonObject("properties");
-        obj.add(key, type.getObject());
+        definitions(type);
+        obj.add(key, type.asRef());
         return this;
     }
     @Contract("_ -> this")
     public JsonSchemaTypeBuilder properties(JsonSchemaTypeBuilder other) {
-        JsonObject obj = getOrCreateJsonObject("properties");
-        JsonObject obj2 = other.getOrCreateJsonObject("properties");
-        obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        {
+            JsonObject obj = getOrCreateJsonObject("properties");
+            JsonObject obj2 = other.getOrCreateJsonObject("properties");
+            obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        }
+
+        {
+            JsonObject obj = getOrCreateJsonObject("definitions");
+            JsonObject obj2 = other.getOrCreateJsonObject("definitions");
+            obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        }
+        return this;
+    }
+
+    @Contract("_ -> this")
+    public JsonSchemaTypeBuilder merge(JsonSchemaTypeBuilder other) {
+        {
+            JsonObject obj = getOrCreateJsonObject("properties");
+            JsonObject obj2 = other.getOrCreateJsonObject("properties");
+            obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        }
+        {
+            JsonObject obj = getOrCreateJsonObject("definitions");
+            JsonObject obj2 = other.getOrCreateJsonObject("definitions");
+            obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        }
+        {
+            JsonObject obj = getOrCreateJsonObject("patternProperties");
+            JsonObject obj2 = other.getOrCreateJsonObject("patternProperties");
+            obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        }
+        {
+            JsonObject obj = getOrCreateJsonObject("additionalProperties");
+            JsonObject obj2 = other.getOrCreateJsonObject("additionalProperties");
+            obj2.entrySet().forEach(entry -> obj.add(entry.getKey(), entry.getValue()));
+        }
         return this;
     }
 
@@ -112,7 +181,8 @@ public  class JsonSchemaTypeBuilder {
     public JsonSchemaTypeBuilder oneOf(SchemaType... types) {
         JsonArray array = new JsonArray();
         for (SchemaType type : types) {
-            array.add(type.getObject());
+            definitions(type);
+            array.add(type.asRef());
         }
         jsonObject.add("oneOf", array);
         return this;
@@ -129,7 +199,8 @@ public  class JsonSchemaTypeBuilder {
             jsonObject.add("oneOf", array);
         }
         for (SchemaType type : types) {
-            array.add(type.getObject());
+            definitions(type);
+            array.add(type.asRef());
         }
         return this;
     }
@@ -138,7 +209,8 @@ public  class JsonSchemaTypeBuilder {
     public JsonSchemaTypeBuilder anyOf(SchemaType... types) {
         JsonArray array = new JsonArray();
         for (SchemaType type : types) {
-            array.add(type.getObject());
+            definitions(type);
+            array.add(type.asRef());
         }
         jsonObject.add("anyOf", array);
         return this;
@@ -155,7 +227,8 @@ public  class JsonSchemaTypeBuilder {
             jsonObject.add("anyOf", array);
         }
         for (SchemaType type : types) {
-            array.add(type.getObject());
+            definitions(type);
+            array.add(type.asRef());
         }
         return this;
     }
@@ -295,8 +368,38 @@ public  class JsonSchemaTypeBuilder {
     public SchemaType build() {
         return new SchemaType(jsonObject);
     }
+    public SchemaType build(UUID key) {
+        return new SchemaType(key,buildJsonObject(key));
+    }
 
-    public JsonObject getJsonObject() {
-        return jsonObject;
+    private JsonObject buildJsonObject(UUID key) {
+        JsonObject schema = SchemaType.deepCopy(jsonObject);
+
+        JsonObject out = new JsonObject();
+
+        out.addProperty("$ref", "#/definitions/" + key);
+
+        JsonObject definitions = getOrCreateJsonObject("definitions", out);
+
+        if (schema.has("definitions")) {
+            JsonObject innerDefs = schema.getAsJsonObject("definitions");
+            schema.remove("definitions");
+
+            for (var e : innerDefs.entrySet()) {
+                definitions.add(e.getKey(), e.getValue());
+            }
+        }
+        definitions.add(key.toString(), schema);
+
+        return out;
+    }
+    private JsonObject getOrCreateJsonObject(String name, JsonObject in) {
+        if (in.get(name) instanceof JsonObject o) {
+            return o;
+        } else {
+            JsonObject obj = new JsonObject();
+            in.add(name, obj);
+            return obj;
+        }
     }
 }

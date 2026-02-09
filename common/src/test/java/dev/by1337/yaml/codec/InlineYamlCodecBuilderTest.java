@@ -1,5 +1,7 @@
 package dev.by1337.yaml.codec;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dev.by1337.yaml.YamlMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -57,5 +59,9 @@ public class InlineYamlCodecBuilderTest {
         Assertions.assertEquals(vec3i, yamlMap.get("full").decode(Vec3i.CODEC).result());
         Assertions.assertEquals(vec3i, yamlMap.get("inline").decode(Vec3i.CODEC).result());
         Assertions.assertEquals(vec3i, yamlMap.get("idk").decode(Vec3i.CODEC).result());
+
+        Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+        System.out.println(gson.toJson(Vec3i.CODEC.schema().buildJson()));
+        System.out.println();
     }
 }

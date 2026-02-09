@@ -17,6 +17,10 @@ public class SchemaTypes {
     public static final SchemaType ANY = builder().build();
 
 
+    public static SchemaType ref(String name){
+        return JsonSchemaTypeBuilder.newRef(name);
+    }
+
     public static SchemaType oneOf(final Type... types) {
         return builder().types(types).build();
     }

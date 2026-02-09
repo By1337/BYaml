@@ -1034,14 +1034,23 @@ public class RecordYamlCodecBuilder {
         @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
         public YamlValue encode(T value) {
-            Map<String, Object> map = new LinkedHashMap<>();
+            Map<Object, Object> map = new LinkedHashMap<>();
             for (YamlField field : getFields()) {
                 Object o = field.getter.apply(value);
                 if (o == null) {
                     o = field.defaultValue;
                 }
                 if (o != null) {
-                    map.put(field.name, field.codec.encode(o).getValue());
+                    var v = field.codec.encode(o).getValue();
+                    if (field.name == null) {
+                        if (v instanceof Map<?, ?> m) {
+                            map.putAll(m);
+                        } else {
+                            map.put(Integer.toHexString(System.identityHashCode(v)), v);
+                        }
+                    } else {
+                        map.put(field.name, v);
+                    }
                 }
             }
             return YamlValue.wrap(map);
@@ -1050,6 +1059,7 @@ public class RecordYamlCodecBuilder {
         @Override
         public @NotNull SchemaType schema() {
             if (schemaType != null) return schemaType;
+            schemaType = new SchemaType();
             buildSchemaType();
             return schemaType;
         }
@@ -1058,10 +1068,11 @@ public class RecordYamlCodecBuilder {
         private void buildSchemaType() {
             JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
             builder.type(SchemaTypes.Type.OBJECT);
+
             List<String> required = new ArrayList<>();
             for (YamlField field : getFields()) {
                 if (field.name == null) {
-                    builder.properties(field.codec.schema().asBuilder());
+                    builder.merge(field.codec.schema().asBuilder());
                 } else {
                     builder.properties(field.name, field.codec.schema());
                     if (field.defaultValue == null) {
@@ -1071,7 +1082,7 @@ public class RecordYamlCodecBuilder {
             }
             builder.additionalProperties(false);
             if (!required.isEmpty()) builder.required(required);
-            schemaType = builder.build();
+            schemaType = builder.build(schemaType.getRandName());
         }
     }
 

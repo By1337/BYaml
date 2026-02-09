@@ -241,6 +241,29 @@ public interface YamlCodec<T> extends LegacyYamlCodec<T> {
         };
     }
 
+    static <T> YamlCodec<T> recursive(Function<YamlCodec<T>, YamlCodec<T>> wrapped){
+        return new  YamlCodec<T>() {
+            final LazyLoad<YamlCodec<T>> wrappedCodec = new LazyLoad<>(() -> wrapped.apply(this));
+            final LazyLoad<SchemaType> schemaType = new LazyLoad<>(() -> {
+                return wrappedCodec.get().schema().asRefSchema();
+            });
+            @Override
+            public DataResult<T> decode(YamlValue value) {
+                return wrappedCodec.get().decode(value);
+            }
+
+            @Override
+            public YamlValue encode(T value) {
+                return wrappedCodec.get().encode(value);
+            }
+
+            @Override
+            public @NotNull SchemaType schema() {
+                return schemaType.get();
+            }
+        };
+    }
+
     static <T> YamlCodec<List<T>> wildcard(Map<String, T> map) {
         return new WildcardLookupCodec<>(map);
     }

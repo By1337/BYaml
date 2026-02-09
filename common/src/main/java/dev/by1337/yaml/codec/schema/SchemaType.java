@@ -3,19 +3,46 @@ package dev.by1337.yaml.codec.schema;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 
 import java.util.Map;
+import java.util.UUID;
 
 public class SchemaType {
-    private final JsonObject object;
+    private final UUID randName;
+    private JsonObject object;
 
     public SchemaType(JsonObject object) {
+        this.object = object;
+        randName = UUID.randomUUID();
+    }
+
+    public SchemaType() {
+        randName = UUID.randomUUID();
+        object = new JsonObject();
+    }
+
+    public SchemaType(UUID randName, JsonObject object) {
+        this.randName = randName;
+        this.object = object;
+    }
+
+    @ApiStatus.Internal
+    public void setObject(JsonObject object) {
         this.object = object;
     }
 
     JsonObject getObject() {
         return object;
+    }
+
+    JsonObject asRef(){
+        return JsonSchemaTypeBuilder.newRef(randName.toString()).getObject();
+    }
+
+    public SchemaType asRefSchema(){
+        return JsonSchemaTypeBuilder.newRef(randName.toString());
     }
 
     public JsonSchemaTypeBuilder asBuilder() {
@@ -46,7 +73,7 @@ public class SchemaType {
 
 
     @SuppressWarnings("unchecked")
-    private static <T extends JsonElement> T deepCopy(T val) {
+    static <T extends JsonElement> T deepCopy(T val) {
         if (val instanceof JsonObject obj) {
             JsonObject copy = new JsonObject();
             for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
@@ -61,5 +88,9 @@ public class SchemaType {
             return (T) copy;
         }
         return val;
+    }
+
+    public UUID getRandName() {
+        return randName;
     }
 }
