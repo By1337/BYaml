@@ -3,10 +3,6 @@ package dev.by1337.yaml.codec.k2v;
 import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.YamlCodec;
-import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
-import dev.by1337.yaml.codec.schema.SchemaType;
-import dev.by1337.yaml.codec.schema.SchemaTypes;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Function;
@@ -15,28 +11,23 @@ public class LookupCodec<V> implements Key2ValueCodec<V> {
 
     private final Map<String, V> k2v = new HashMap<>();
     private final Map<V, String> v2k = new IdentityHashMap<>();
-    private SchemaType schemaType = SchemaTypes.ANY;
 
     public LookupCodec(Map<String, V> map) {
         map.forEach(this::put);
-        schemaType = JsonSchemaTypeBuilder.create().enumOf(k2v.keySet()).build();
     }
 
     public LookupCodec(Collection<V> collection, Function<V, String> mapper) {
         collection.forEach(v -> put(mapper.apply(v), v));
-        schemaType = JsonSchemaTypeBuilder.create().enumOf(k2v.keySet()).build();
     }
 
     public LookupCodec(Iterator<V> iterator, Function<V, String> mapper) {
         iterator.forEachRemaining(v -> put(mapper.apply(v), v));
-        schemaType = JsonSchemaTypeBuilder.create().enumOf(k2v.keySet()).build();
     }
 
     public LookupCodec(V[] array, Function<V, String> mapper) {
         for (V v : array) {
             put(mapper.apply(v), v);
         }
-        schemaType = JsonSchemaTypeBuilder.create().enumOf(k2v.keySet()).build();
     }
 
     @Override
@@ -44,7 +35,7 @@ public class LookupCodec<V> implements Key2ValueCodec<V> {
         return k2v;
     }
 
-    public WildcardLookupCodec<V> wildcard(){
+    public WildcardLookupCodec<V> wildcard() {
         return new WildcardLookupCodec<>(k2v);
     }
 
@@ -71,10 +62,4 @@ public class LookupCodec<V> implements Key2ValueCodec<V> {
         String key = v2k.get(value);
         return YamlValue.wrap(Objects.requireNonNullElseGet(key, () -> "Unknown value: " + value));
     }
-
-    @Override
-    public @NotNull SchemaType schema() {
-        return schemaType;
-    }
-
 }

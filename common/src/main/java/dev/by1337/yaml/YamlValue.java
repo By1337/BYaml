@@ -16,7 +16,7 @@ public final class YamlValue implements YamlHolder {
     private final @Nullable Object value;
 
     private YamlValue(@Nullable Object value) {
-        if (value instanceof YamlValue) throw new IllegalStateException(value + " уже YamlValue");
+        if (value instanceof YamlValue) throw new IllegalStateException(value + " already YamlValue");
         this.value = value;
     }
 
@@ -68,6 +68,7 @@ public final class YamlValue implements YamlHolder {
 
     public DataResult<Map<Object, Object>> asMap() {
         if (value instanceof Map<?, ?> map) {
+            //noinspection unchecked
             return DataResult.success((Map<Object, Object>) map);
         }
         return DataResult.error("Expected a Map, but found " + describeType() + ".");

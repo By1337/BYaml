@@ -1,14 +1,8 @@
 package dev.by1337.yaml.codec;
 
 import dev.by1337.yaml.YamlValue;
-import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
-import dev.by1337.yaml.codec.schema.SchemaType;
-import dev.by1337.yaml.codec.schema.SchemaTypes;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 public class RecordYamlCodecBuilder {
@@ -1026,8 +1020,6 @@ public class RecordYamlCodecBuilder {
 
     private static abstract class MapYamlCodec<T> implements YamlCodec<T> {
 
-        private SchemaType schemaType;
-
         @SuppressWarnings({"rawtypes"})
         protected abstract YamlField[] getFields();
 
@@ -1054,35 +1046,6 @@ public class RecordYamlCodecBuilder {
                 }
             }
             return YamlValue.wrap(map);
-        }
-
-        @Override
-        public @NotNull SchemaType schema() {
-            if (schemaType != null) return schemaType;
-            schemaType = new SchemaType();
-            buildSchemaType();
-            return schemaType;
-        }
-
-        @SuppressWarnings({"rawtypes"})
-        private void buildSchemaType() {
-            JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
-            builder.type(SchemaTypes.Type.OBJECT);
-
-            List<String> required = new ArrayList<>();
-            for (YamlField field : getFields()) {
-                if (field.name == null) {
-                    builder.merge(field.codec.schema().asBuilder());
-                } else {
-                    builder.properties(field.name, field.codec.schema());
-                    if (field.defaultValue == null) {
-                        required.add(field.name);
-                    }
-                }
-            }
-            builder.additionalProperties(false);
-            if (!required.isEmpty()) builder.required(required);
-            schemaType = builder.build(schemaType.getRandName());
         }
     }
 

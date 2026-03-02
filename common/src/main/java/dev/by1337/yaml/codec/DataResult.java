@@ -114,13 +114,17 @@ public interface DataResult<T> {
      * @param <T> the type of result value
      * @return a {@code DataResult} representing the success, partial, or failure result
      */
-    static <T> DataResult<T> accept(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed, @Nullable String error) {
+    static <T> DataResult<T> tryOf(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed, @Nullable String error) {
         try {
             if (error == null) return DataResult.success(supplier.get());
             return DataResult.error(error).partial(supplier.get());
         } catch (Throwable t) {
             return ifFailed.apply(t);
         }
+    }
+
+    static <T> DataResult<T> accept(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed, @Nullable String error) {
+        return tryOf(supplier, ifFailed, error);
     }
 
     /**
@@ -143,12 +147,15 @@ public interface DataResult<T> {
      * @return a successful or failed {@code DataResult} depending on the supplier outcome
      */
 
-    static <T> DataResult<T> accept(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed) {
+    static <T> DataResult<T> tryOf(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed) {
         try {
             return DataResult.success(supplier.get());
         } catch (Throwable t) {
             return ifFailed.apply(t);
         }
+    }
+    static <T> DataResult<T> accept(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed) {
+        return tryOf(supplier, ifFailed);
     }
 
     /**
@@ -284,7 +291,7 @@ public interface DataResult<T> {
      * @param <T> the result type
      * @return an error {@code DataResult}
      */
-    static <T> DataResult<T> error(@Nullable String message) {
+    static <T> DataResult<T> error(String message) {
         return new DataResult<T>() {
             @Override
             public @Nullable T result() {
@@ -324,12 +331,12 @@ public interface DataResult<T> {
      * @return a new {@code DataResult} representing either the mapped value or a propagated error
      */
 
-    default <R> DataResult<R> flatMap(ThrowingFunction<? super T, DataResult<R>> mapper) {
+    default <R> DataResult<R> flatMap(ThrowingFunction<? super T, DataResult<? extends R>> mapper) {
         if (result() == null) {
             return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
         }
         try {
-            var v = mapper.apply(result());
+            DataResult<R> v = mapper.apply(result()).widen();
             if (v.hasResult() && !v.hasError() && error() != null) {
                 return error(error()).partial(v.result());
             }
@@ -360,6 +367,9 @@ public interface DataResult<T> {
      * @return a new {@code DataResult} containing the mapped value, or an error if mapping fails
      */
     default <R> DataResult<R> mapValue(ThrowingFunction<? super T, ? extends R> mapper) {
+        return map(mapper);
+    }
+    default <R> DataResult<R> map(ThrowingFunction<? super T, ? extends R> mapper) {
         if (result() == null) {
             return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
         }
@@ -373,6 +383,9 @@ public interface DataResult<T> {
     }
 
     default DataResult<T> mapErrorIfHas(Function<String, String> mapper){
+        return mapError(mapper);
+    }
+    default DataResult<T> mapError(Function<String, String> mapper){
         String error = error();
         if (error == null) return this;
         String msg = mapper.apply(error);
@@ -388,6 +401,11 @@ public interface DataResult<T> {
                 return msg;
             }
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    default <R> DataResult<R> widen() {
+        return (DataResult<R>) this;
     }
 
 
@@ -409,7 +427,7 @@ public interface DataResult<T> {
      */
     @FunctionalInterface
     interface ThrowingSupplier<T> {
-        T get() throws Throwable;
+        T get() throws Exception;
     }
 
 
@@ -431,7 +449,7 @@ public interface DataResult<T> {
      */
     @FunctionalInterface
     interface ThrowingFunction<T, R> {
-        R apply(T t) throws Throwable;
+        R apply(T t) throws Exception;
     }
 
 }

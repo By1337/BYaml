@@ -1,13 +1,12 @@
 package dev.by1337.yaml.codec;
 
-import com.google.gson.JsonObject;
 import dev.by1337.yaml.YamlValue;
-import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
-import dev.by1337.yaml.codec.schema.SchemaType;
-import dev.by1337.yaml.codec.schema.SchemaTypes;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -40,7 +39,6 @@ public class PipelineYamlCodecBuilder<T> {
     }
 
 
-
     public <R> PipelineYamlCodecBuilder<T> field(YamlCodec<R> codec, String name, Function<T, R> getter, BiConsumer<T, R> setter) {
         return field(codec, name, getter, setter, null);
     }
@@ -55,7 +53,7 @@ public class PipelineYamlCodecBuilder<T> {
     }
 
     public <R> PipelineYamlCodecBuilder<T> listOf(YamlCodec<R> codec, String name, Function<T, List<R>> getter, BiConsumer<T, List<R>> setter, List<R> def) {
-        fields.add(new YamlField<>(codec.listOrSingle(), name, getter, setter, def));
+        fields.add(new YamlField<>(codec.listOf(), name, getter, setter, def));
         return this;
     }
 
@@ -73,7 +71,7 @@ public class PipelineYamlCodecBuilder<T> {
     }
 
     public <R extends Enum<R>> PipelineYamlCodecBuilder<T> enumOf(Class<R> type, String name, Function<T, R> getter, BiConsumer<T, R> setter, R def) {
-        fields.add(new YamlField<>(YamlCodec.enumOf(type), name, getter, setter, def));
+        fields.add(new YamlField<>(YamlCodec.fromEnum(type), name, getter, setter, def));
         return this;
     }
 
@@ -122,31 +120,10 @@ public class PipelineYamlCodecBuilder<T> {
         return this;
     }
 
-    private static <T> Supplier<SchemaType> schemaTypeSupplier(UUID key, List<YamlField<? super T, ?>> fields) {
-        return () -> {
-            JsonSchemaTypeBuilder builder = new JsonSchemaTypeBuilder();
-            builder.type(SchemaTypes.Type.OBJECT);
-            for (YamlField<? super T, ?> field : fields) {
-                if (field.setter == null) {
-                    throw new NullPointerException("Setter for field " + field.name + " is null");
-                }
-                if (field.name == null) {
-                    builder.properties(field.codec.schema().asBuilder());
-                } else {
-                    builder.properties(field.name, field.codec.schema());
-                }
-            }
-            builder.additionalProperties(false);
-            return builder.build(key);
-        };
-    }
 
     public YamlCodec<T> build() {
 
         return new YamlCodec<T>() {
-            private final UUID key = UUID.randomUUID();
-            SchemaType schemaType;
-            final Supplier<SchemaType> schemaTypeSupplier = schemaTypeSupplier(key, new ArrayList<YamlField<? super T, ?>>(fields));
 
             @Override
             @SuppressWarnings({"unchecked", "rawtypes"})
@@ -193,14 +170,6 @@ public class PipelineYamlCodecBuilder<T> {
                     }
                 }
                 return YamlValue.wrap(map);
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                if (schemaType != null) return schemaType;
-                schemaType = new SchemaType(key, new JsonObject()); // если рекурсивно вызовется schema()
-                schemaType = schemaTypeSupplier.get();
-                return schemaType;
             }
         };
     }

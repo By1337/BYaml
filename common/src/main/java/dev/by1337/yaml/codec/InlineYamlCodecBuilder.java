@@ -1,9 +1,6 @@
 package dev.by1337.yaml.codec;
 
 import dev.by1337.yaml.YamlValue;
-import dev.by1337.yaml.codec.schema.SchemaType;
-import dev.by1337.yaml.codec.schema.SchemaTypes;
-import org.jetbrains.annotations.NotNull;
 
 public class InlineYamlCodecBuilder {
 
@@ -1101,11 +1098,9 @@ public class InlineYamlCodecBuilder {
 
     private static abstract class InlineCodec<T> implements YamlCodec<T> {
         private final String regex;
-        private final SchemaType schemaType;
 
         private InlineCodec(String regex, String expectedExample) {
             this.regex = regex;
-            schemaType = SchemaTypes.STRING.asBuilder().examples(expectedExample).build();
         }
 
         @SuppressWarnings({"rawtypes"})
@@ -1120,11 +1115,6 @@ public class InlineYamlCodecBuilder {
             }
             sb.setLength(sb.length() - regex.length());
             return YamlValue.wrap(sb.toString());
-        }
-
-        @Override
-        public @NotNull SchemaType schema() {
-            return schemaType;
         }
     }
 

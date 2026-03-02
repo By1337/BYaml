@@ -3,9 +3,6 @@ package dev.by1337.yaml.codec.list;
 import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.YamlCodec;
-import dev.by1337.yaml.codec.schema.SchemaType;
-import dev.by1337.yaml.codec.schema.SchemaTypes;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Function;
@@ -14,11 +11,9 @@ import java.util.stream.Collectors;
 public class ListCodec<T> implements YamlCodec<List<T>> {
     private final YamlCodec<T> subCodec;
 
-    final SchemaType type;
 
     public ListCodec(YamlCodec<T> subCodec) {
         this.subCodec = subCodec;
-        type = SchemaTypes.oneOf(subCodec.schema(), subCodec.schema().listOf());
     }
 
     public <R extends Collection<T>> YamlCodec<R> as(Function<List<T>, R> mapper) {
@@ -31,11 +26,6 @@ public class ListCodec<T> implements YamlCodec<List<T>> {
             @Override
             public YamlValue encode(R value) {
                 return encode$0(value);
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                return type;
             }
         };
     }
@@ -55,11 +45,6 @@ public class ListCodec<T> implements YamlCodec<List<T>> {
             public YamlValue encode(T[] value) {
                 if (value.length == 1) return subCodec.encode(value[0]);
                 return encode$0(Arrays.asList(value));
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                return type;
             }
         };
     }
@@ -85,10 +70,5 @@ public class ListCodec<T> implements YamlCodec<List<T>> {
     private YamlValue encode$0(Collection<T> value) {
         if (value.size() == 1) return subCodec.encode(value.iterator().next());
         return YamlValue.wrap(value.stream().map(v -> subCodec.encode(v).getRaw()).collect(Collectors.toList()));
-    }
-
-    @Override
-    public @NotNull SchemaType schema() {
-        return type;
     }
 }

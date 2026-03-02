@@ -3,11 +3,7 @@ package dev.by1337.yaml.codec.k2v;
 import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.YamlCodec;
-import dev.by1337.yaml.codec.schema.JsonSchemaTypeBuilder;
-import dev.by1337.yaml.codec.schema.SchemaType;
-import dev.by1337.yaml.codec.schema.SchemaTypes;
 import dev.by1337.yaml.util.Wildcard;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,37 +14,23 @@ public class WildcardLookupCodec<V> implements YamlCodec<List<V>> {
 
     private final Map<String, V> k2v = new HashMap<>();
     private final Map<V, String> v2k = new IdentityHashMap<>();
-    private SchemaType schemaType = SchemaTypes.ANY;
 
     public WildcardLookupCodec(Map<String, V> map) {
         map.forEach(this::put);
-        createSchemaType();
     }
 
     public WildcardLookupCodec(Collection<V> collection, Function<V, String> mapper) {
         collection.forEach(v -> put(mapper.apply(v), v));
-        createSchemaType();
     }
 
     public WildcardLookupCodec(Iterator<V> iterator, Function<V, String> mapper) {
         iterator.forEachRemaining(v -> put(mapper.apply(v), v));
-        createSchemaType();
     }
 
     public WildcardLookupCodec(V[] array, Function<V, String> mapper) {
         for (V v : array) {
             put(mapper.apply(v), v);
         }
-    }
-
-    private void createSchemaType() {
-        var enumOf = JsonSchemaTypeBuilder.create().enumOf(k2v.keySet()).build();
-        schemaType = SchemaTypes.anyOf(
-                enumOf,
-                enumOf.listOf(),
-                SchemaTypes.STRING,
-                SchemaTypes.STRING.listOf()
-        );
     }
 
     public static <T extends Enum<T>> WildcardLookupCodec<T> fromEnum(T[] enums) {
@@ -128,11 +110,6 @@ public class WildcardLookupCodec<V> implements YamlCodec<List<V>> {
         return YamlValue.wrap(result);
     }
 
-    @Override
-    public @NotNull SchemaType schema() {
-        return schemaType;
-    }
-
     public <R extends Collection<V>> YamlCodec<R> as(Function<List<V>, R> mapper) {
         return new YamlCodec<R>() {
             @Override
@@ -143,11 +120,6 @@ public class WildcardLookupCodec<V> implements YamlCodec<List<V>> {
             @Override
             public YamlValue encode(R value) {
                 return encode$(value);
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                return schemaType;
             }
         };
     }
@@ -166,11 +138,6 @@ public class WildcardLookupCodec<V> implements YamlCodec<List<V>> {
             @Override
             public YamlValue encode(V[] value) {
                 return encode$(Arrays.asList(value));
-            }
-
-            @Override
-            public @NotNull SchemaType schema() {
-                return schemaType;
             }
         };
     }
