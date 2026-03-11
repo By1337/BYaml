@@ -7,6 +7,8 @@ import dev.by1337.yaml.codec.k2v.Key2ValueCodec;
 import dev.by1337.yaml.codec.k2v.LookupCodec;
 import dev.by1337.yaml.codec.k2v.WildcardLookupCodec;
 import dev.by1337.yaml.codec.list.ListCodec;
+import dev.by1337.yaml.codec.schema.SchemaType;
+import dev.by1337.yaml.util.ArrayCodecUtil;
 import dev.by1337.yaml.util.LazyLoad;
 
 import java.util.*;
@@ -40,6 +42,13 @@ public interface YamlCodec<T> extends LegacyYamlCodec<T> {
         return v.decode(STRING);
     }, YamlValue::wrap);
     YamlCodec<List<String>> STRINGS = STRING.listOf();
+    YamlCodec<int[]> INT_ARRAY = ArrayCodecUtil.createCodec(INT, int[]::new, Integer.class);
+    YamlCodec<byte[]> BYTE_ARRAY = ArrayCodecUtil.createCodec(BYTE, byte[]::new, Byte.class);
+    YamlCodec<double[]> DOUBLE_ARRAY = ArrayCodecUtil.createCodec(DOUBLE, double[]::new, Double.class);
+    YamlCodec<float[]> FLOAT_ARRAY = ArrayCodecUtil.createCodec(FLOAT, float[]::new, Float.class);
+    YamlCodec<long[]> LONG_ARRAY = ArrayCodecUtil.createCodec(LONG, long[]::new, Long.class);
+    YamlCodec<short[]> SHORT_ARRAY = ArrayCodecUtil.createCodec(SHORT, short[]::new, Short.class);
+    YamlCodec<boolean[]> BOOL_ARRAY = ArrayCodecUtil.createCodec(BOOL, boolean[]::new, Boolean.class);
 
     DataResult<T> decode(YamlValue value);
 
@@ -83,6 +92,7 @@ public interface YamlCodec<T> extends LegacyYamlCodec<T> {
             }
         };
     }
+
     default <E> YamlCodec<E> map(Function<T, E> map, Function<E, T> demap) {
         final YamlCodec<T> subCodec = this;
         return new YamlCodec<E>() {
@@ -140,7 +150,8 @@ public interface YamlCodec<T> extends LegacyYamlCodec<T> {
             }
         };
     }
-    default YamlCodec<T> postDecode(Consumer<T> c){
+
+    default YamlCodec<T> postDecode(Consumer<T> c) {
         var subCodec = this;
         return new YamlCodec<T>() {
             @Override
@@ -267,6 +278,11 @@ public interface YamlCodec<T> extends LegacyYamlCodec<T> {
                 );
             }
         };
+    }
+
+    @Deprecated
+    static <T> YamlCodec<T> of(final Function<YamlValue, DataResult<T>> decoder, final Function<T, YamlValue> encoder, SchemaType type) {
+        return of(decoder, encoder);
     }
 
     static <T> YamlCodec<T> of(final Function<YamlValue, DataResult<T>> decoder, final Function<T, YamlValue> encoder) {

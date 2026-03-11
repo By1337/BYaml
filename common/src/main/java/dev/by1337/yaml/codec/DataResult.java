@@ -1,10 +1,12 @@
 package dev.by1337.yaml.codec;
 
+import dev.by1337.yaml.util.ApplyBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 
@@ -43,10 +45,11 @@ public interface DataResult<T> {
     @Nullable String error();
 
     @Contract("!null -> !null")
-    default @Nullable String errorOrDefault(@Nullable String def){
+    default @Nullable String errorOrDefault(@Nullable String def) {
         String err = error();
         return err == null ? def : err;
     }
+
     /**
      * Returns whether this result contains a non-null value.
      *
@@ -74,6 +77,30 @@ public interface DataResult<T> {
         return res == null ? defaultValue : res;
     }
 
+    default <E> ApplyBuilder.Ap2<T, E> and(DataResult<E> e) {
+        return new ApplyBuilder.Ap2<>(this, e);
+    }
+
+
+    default DataResult<T> withError(@Nullable String newError) {
+        if (newError == null) return this;
+
+        T value = result();
+        String oldError = error();
+
+        String merged = oldError == null ? newError : oldError + " " + newError;
+
+        if (value == null) {
+            return error(merged);
+        }
+        return error(merged).partial(value);
+    }
+
+    private static @Nullable String mergeErrors(DataResult<?> a, DataResult<?> b) {
+        if (a.error() == null) return b.error();
+        if (b.error() == null) return a.error();
+        return a.error() + " " + b.error();
+    }
 
     /**
      * Returns the result value if present, otherwise throws an {@link IllegalStateException}.
@@ -84,13 +111,13 @@ public interface DataResult<T> {
      * @return the non-null result
      * @throws IllegalStateException if no result is present; the exception message will include the error if available
      *
-     * <p><b>Example:</b>
-     * <pre>{@code
-     * int value = DataResult.success(42).getOrThrow(); // returns 42
+     *                               <p><b>Example:</b>
+     *                               <pre>{@code
+     *                               int value = DataResult.success(42).getOrThrow(); // returns 42
      *
-     * DataResult<String> failed = DataResult.error("Invalid format");
-     * failed.getOrThrow(); // throws IllegalStateException("Invalid format")
-     * }</pre>
+     *                               DataResult<String> failed = DataResult.error("Invalid format");
+     *                               failed.getOrThrow(); // throws IllegalStateException("Invalid format")
+     *                               }</pre>
      */
     default @NotNull T getOrThrow() {
         T v = result();
@@ -110,8 +137,8 @@ public interface DataResult<T> {
      *
      * @param supplier the supplier that produces the result, may throw an exception
      * @param ifFailed a function that transforms any thrown exception into a {@code DataResult} failure
-     * @param error an optional error message; if not null and the supplier succeeds, the result is marked partial
-     * @param <T> the type of result value
+     * @param error    an optional error message; if not null and the supplier succeeds, the result is marked partial
+     * @param <T>      the type of result value
      * @return a {@code DataResult} representing the success, partial, or failure result
      */
     static <T> DataResult<T> tryOf(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed, @Nullable String error) {
@@ -143,7 +170,7 @@ public interface DataResult<T> {
      *
      * @param supplier a supplier that may throw an exception
      * @param ifFailed function to create a failed {@code DataResult} from a thrown exception
-     * @param <T> the type of result value
+     * @param <T>      the type of result value
      * @return a successful or failed {@code DataResult} depending on the supplier outcome
      */
 
@@ -154,6 +181,7 @@ public interface DataResult<T> {
             return ifFailed.apply(t);
         }
     }
+
     static <T> DataResult<T> accept(ThrowingSupplier<T> supplier, Function<Throwable, DataResult<T>> ifFailed) {
         return tryOf(supplier, ifFailed);
     }
@@ -190,7 +218,7 @@ public interface DataResult<T> {
      * }</pre>
      *
      * @param result the fallback value to associate
-     * @param <R> the result type
+     * @param <R>    the result type
      * @return a new {@code DataResult} containing the partial value and the error
      * @throws IllegalStateException if this result already has a value
      */
@@ -207,6 +235,7 @@ public interface DataResult<T> {
             public @Nullable String error() {
                 return error;
             }
+
             @Override
             public String toString() {
                 return "DataResult{ result: '" + result() + "', error: '" + error() + "' }";
@@ -223,9 +252,10 @@ public interface DataResult<T> {
      * }</pre>
      *
      * @param result the value to return
-     * @param <T> the result type
+     * @param <T>    the result type
      * @return a successful {@code DataResult}
      */
+
     static <T> DataResult<T> success(@Nullable final T result) {
         return new DataResult<T>() {
             @Override
@@ -245,10 +275,18 @@ public interface DataResult<T> {
         };
     }
 
+    static <T> DataResult<T> success(final ThrowingSupplier<T> result) {
+        try {
+            return success(result.get());
+        } catch (Throwable t) {
+            return error(t.getMessage(), t);
+        }
+    }
+
     /**
      * Creates an error {@code DataResult} from the given {@link Throwable}.
      *
-     * @param t the exception
+     * @param t   the exception
      * @param <T> the result type
      * @return an error {@code DataResult} with the exception message
      */
@@ -260,8 +298,8 @@ public interface DataResult<T> {
      * Creates an error {@code DataResult} with a formatted error message.
      *
      * @param message the format string
-     * @param args arguments for the format
-     * @param <T> the result type
+     * @param args    arguments for the format
+     * @param <T>     the result type
      * @return an error {@code DataResult}
      */
     static <T> DataResult<T> error(@NotNull String message, Object... args) {
@@ -274,9 +312,9 @@ public interface DataResult<T> {
      * <p>The final message is composed of the formatted message followed by the throwable's stack trace.
      *
      * @param message the error format string
-     * @param t the throwable to include
-     * @param args arguments for the format
-     * @param <T> the result type
+     * @param t       the throwable to include
+     * @param args    arguments for the format
+     * @param <T>     the result type
      * @return an error {@code DataResult}
      */
     static <T> DataResult<T> error(@NotNull String message, @NotNull Throwable t, Object... args) {
@@ -288,7 +326,7 @@ public interface DataResult<T> {
      * Creates an error {@code DataResult} with the given message.
      *
      * @param message the error message
-     * @param <T> the result type
+     * @param <T>     the result type
      * @return an error {@code DataResult}
      */
     static <T> DataResult<T> error(String message) {
@@ -327,7 +365,7 @@ public interface DataResult<T> {
      * }</pre>
      *
      * @param mapper the mapping function to apply to the result value
-     * @param <R> the type of the result of the mapping function
+     * @param <R>    the type of the result of the mapping function
      * @return a new {@code DataResult} representing either the mapped value or a propagated error
      */
 
@@ -363,12 +401,13 @@ public interface DataResult<T> {
      * }</pre>
      *
      * @param mapper the function to apply to the result value
-     * @param <R> the type of the result after mapping
+     * @param <R>    the type of the result after mapping
      * @return a new {@code DataResult} containing the mapped value, or an error if mapping fails
      */
     default <R> DataResult<R> mapValue(ThrowingFunction<? super T, ? extends R> mapper) {
         return map(mapper);
     }
+
     default <R> DataResult<R> map(ThrowingFunction<? super T, ? extends R> mapper) {
         if (result() == null) {
             return error(errorOrDefault("Failed to map null! mapper: " + mapper.getClass()));
@@ -382,10 +421,11 @@ public interface DataResult<T> {
         }
     }
 
-    default DataResult<T> mapErrorIfHas(Function<String, String> mapper){
+    default DataResult<T> mapErrorIfHas(Function<String, String> mapper) {
         return mapError(mapper);
     }
-    default DataResult<T> mapError(Function<String, String> mapper){
+
+    default DataResult<T> mapError(Function<String, String> mapper) {
         String error = error();
         if (error == null) return this;
         String msg = mapper.apply(error);

@@ -4,6 +4,7 @@ import dev.by1337.yaml.YamlValue;
 import dev.by1337.yaml.codec.DataResult;
 import dev.by1337.yaml.codec.YamlCodec;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,7 +44,22 @@ public class ListCodec<T> implements YamlCodec<List<T>> {
 
             @Override
             public YamlValue encode(T[] value) {
-                if (value.length == 1) return subCodec.encode(value[0]);
+               // if (value.length == 1) return subCodec.encode(value[0]);
+                return encode$0(Arrays.asList(value));
+            }
+        };
+    }
+
+    public YamlCodec<T[]> asArray(Class<T> componentType) {
+        return new YamlCodec<T[]>() {
+            @Override
+            public DataResult<T[]> decode(YamlValue value) {
+                return ListCodec.this.decode(value).flatMap(l -> DataResult.success(l.toArray((T[])Array.newInstance(componentType, 0))));
+            }
+
+            @Override
+            public YamlValue encode(T[] value) {
+                //    if (value.length == 1) return subCodec.encode(value[0]);
                 return encode$0(Arrays.asList(value));
             }
         };
@@ -68,7 +84,7 @@ public class ListCodec<T> implements YamlCodec<List<T>> {
     }
 
     private YamlValue encode$0(Collection<T> value) {
-        if (value.size() == 1) return subCodec.encode(value.iterator().next());
+       // if (value.size() == 1) return subCodec.encode(value.iterator().next());
         return YamlValue.wrap(value.stream().map(v -> subCodec.encode(v).getRaw()).collect(Collectors.toList()));
     }
 }
